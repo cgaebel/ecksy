@@ -1,0 +1,111 @@
+<mockup version="1.0" skin="sketch" measuredW="983" measuredH="467" mockupW="780" mockupH="445">
+  <controls>
+    <control controlID="51" controlTypeID="com.balsamiq.mockups::BrowserWindow" x="203" y="22" w="780" h="445" measuredW="450" measuredH="400" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <color>15658734</color>
+        <text>Ecksy%20Seedbox%0Ahttp%3A//domain.com/</text>
+      </controlProperties>
+    </control>
+    <control controlID="52" controlTypeID="com.balsamiq.mockups::Image" x="218" y="109" w="130" h="63" measuredW="77" measuredH="79" zOrder="1" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Logo</text>
+      </controlProperties>
+    </control>
+    <control controlID="56" controlTypeID="com.balsamiq.mockups::SearchBox" x="502" y="143" w="-1" h="-1" measuredW="182" measuredH="25" zOrder="2" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>search%20%28with%20autocomplete%29</text>
+      </controlProperties>
+    </control>
+    <control controlID="66" controlTypeID="com.balsamiq.mockups::Label" x="387" y="115" w="-1" h="-1" measuredW="47" measuredH="21" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>4%20mb/s</text>
+      </controlProperties>
+    </control>
+    <control controlID="68" controlTypeID="com.balsamiq.mockups::Label" x="387" y="145" w="-1" h="-1" measuredW="45" measuredH="21" zOrder="4" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>1%20mb/s</text>
+      </controlProperties>
+    </control>
+    <control controlID="70" controlTypeID="com.balsamiq.mockups::TextInput" x="471" y="112" w="245" h="-1" measuredW="151" measuredH="27" zOrder="5" locked="false" isInGroup="-1">
+      <controlProperties>
+        <align>center</align>
+        <backgroundAlpha>1</backgroundAlpha>
+        <borderColor>0</borderColor>
+        <color>16777215</color>
+        <text>Paste%20Magnet%20Link%20Here</text>
+      </controlProperties>
+    </control>
+    <control controlID="73" controlTypeID="com.balsamiq.mockups::LinkBar" x="808" y="109" w="-1" h="-1" measuredW="160" measuredH="20" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <size>12</size>
+        <text>Configure%2C%20Logout%2C%20Help</text>
+      </controlProperties>
+    </control>
+    <control controlID="79" controlTypeID="com.balsamiq.mockups::Icon" x="363" y="143" w="-1" h="-1" measuredW="24" measuredH="24" zOrder="8" locked="false" isInGroup="-1">
+      <controlProperties>
+        <icon>UpArrowIcon%7Csmall</icon>
+      </controlProperties>
+    </control>
+    <control controlID="80" controlTypeID="com.balsamiq.mockups::Icon" x="363" y="113" w="-1" h="-1" measuredW="24" measuredH="24" zOrder="9" locked="false" isInGroup="-1">
+      <controlProperties>
+        <icon>DownArrowIcon%7Csmall</icon>
+      </controlProperties>
+    </control>
+    <control controlID="83" controlTypeID="__group__" x="218" y="187" w="750" h="106" measuredW="750" measuredH="106" zOrder="7" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::DataGrid" x="0" y="0" w="750" h="106" measuredW="436" measuredH="105" zOrder="0" locked="false" isInGroup="83">
+          <controlProperties>
+            <alternateRowColor>15594478</alternateRowColor>
+            <borderStyle>none</borderStyle>
+            <color>15594478</color>
+            <hasHeader>true</hasHeader>
+            <hLines>false</hLines>
+            <rowHeight>40</rowHeight>
+            <selectedIndex>-1</selectedIndex>
+            <text>Name%2C%20Down%2C%20Up%2C%20Progress%2C%20Time%20Remaining%0AMission%20Impossible%204%2C%201%20mb/s%2C%20200%20kb/s%2C%20%2C%202%20hours%0ACommunity%20Season%201%2C%20N/A%2C%2010%20kb/s%2C%20%2C%20Complete%0A%7B50L%2C%200R%2C%200R%2C%2070C%2C%200R%7D</text>
+            <vLines>false</vLines>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::ProgressBar" x="383" y="31" w="258" h="20" measuredW="100" measuredH="20" zOrder="1" locked="false" isInGroup="83">
+          <controlProperties>
+            <indeterminate>false</indeterminate>
+            <scrollBarValue>26</scrollBarValue>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::ProgressBar" x="383" y="66" w="258" h="20" measuredW="100" measuredH="20" zOrder="2" locked="false" isInGroup="83">
+          <controlProperties>
+            <indeterminate>false</indeterminate>
+            <scrollBarValue>100</scrollBarValue>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::Label" x="483" y="65" w="-1" h="-1" measuredW="58" measuredH="21" zOrder="3" locked="false" isInGroup="83">
+          <controlProperties>
+            <text>Click%20Me%21</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="88" controlTypeID="com.balsamiq.mockups::StickyNote" x="363" y="337" w="501" h="123" measuredW="109" measuredH="123" zOrder="11" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>1%29%20Appears%20after%20clicking%20%22Click%20Me%21%22%0A2%29%20While%20the%20torrent%20is%20getting%20compressed/encrypted/hashed%2C%20the%20label%20just%20says%3A%0A%20%20%20%20%20%20%20%20%20Generating...</text>
+      </controlProperties>
+    </control>
+    <control controlID="90" controlTypeID="__group__" x="643" y="224" w="179" h="84" measuredW="179" measuredH="84" zOrder="10" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::Canvas" x="0" y="0" w="179" h="84" measuredW="100" measuredH="70" zOrder="0" locked="false" isInGroup="90"/>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::Label" x="52" y="15" w="-1" h="-1" measuredW="74" measuredH="24" zOrder="1" locked="false" isInGroup="90">
+          <controlProperties>
+            <size>16</size>
+            <text>Permalink</text>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::TextInput" x="15" y="45" w="149" h="-1" measuredW="148" measuredH="27" zOrder="2" locked="false" isInGroup="90">
+          <controlProperties>
+            <color>14540253</color>
+            <text>https%3A//domain.com/dl/...</text>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+  </controls>
+</mockup>
