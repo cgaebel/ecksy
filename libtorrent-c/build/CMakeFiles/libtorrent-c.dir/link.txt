@@ -1,1 +1,0 @@
-/usr/lib/ccache/bin/c++  -fPIC -std=c++0x   -shared -Wl,-soname,liblibtorrent-c.so -o liblibtorrent-c.so CMakeFiles/libtorrent-c.dir/libtorrent-c.cpp.o /usr/local/lib/libtorrent-rasterbar.so -Wl,-rpath,/usr/local/lib 

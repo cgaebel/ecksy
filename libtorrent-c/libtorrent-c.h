@@ -68,7 +68,7 @@ struct session;
 
 struct session* make_session();
 
-struct torrent_handle* add_magnet_uri(struct session*, const char* uri);
+struct torrent_handle* add_magnet_uri(struct session*, const char* uri, const char* targetPath);
 
 void pause_session(struct session*);
 void resume_session(struct session*);
