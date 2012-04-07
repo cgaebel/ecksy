@@ -1,0 +1,15 @@
+We have a few subdirectories of interest in here.
+
+1) libtorrent
+      This is a trunk version of libtorrent. I update it semi-regularly. Make
+      sure to configure and install this before moving on to libtorrent-c
+
+2) libtorrent-c
+      The C bindings to the parts of libtorrent we need. After installing
+      libtorrent-trunk, use CMake to build this DSO. It will be dynamically
+      linked into the Ecksy executable.
+
+3) ecksy
+      This is the actual webserver we will use to serve the torrents. It's
+      based off of Yesod, and uses libtorrent-c to do the interfacing with
+      libtorrent, which, in turn, does all the heavy lifting.
