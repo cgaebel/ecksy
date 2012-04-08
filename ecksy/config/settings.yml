@@ -1,5 +1,5 @@
 Default: &defaults
-  host: "localhost"
+  host: "*4"
   port: 3000
   copyright: (c) 2012
   #analytics: UA-YOURCODE
@@ -16,5 +16,5 @@ Staging:
 Production:
   host: "*4" # any IPv4 host
   port: 3000
-  approot: "http://www.example.com"
+  #approot: "http://localhost/"
   <<: *defaults

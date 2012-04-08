@@ -7,6 +7,8 @@ import System.Directory (doesFileExist, removeFile)
 import System.Exit (exitSuccess)
 import Control.Concurrent (threadDelay)
 
+import Network.Wai.Handler.WarpTLS
+
 import "ecksy" Torrent ( withLibTorrent )
 
 main :: IO ()
@@ -14,9 +16,9 @@ main = do
     putStrLn "Starting devel application"
     r <- withLibTorrent $ \lTor -> do
             (port, app) <- getApplicationDev lTor
-            forkIO $ runSettings defaultSettings
-                        { settingsPort = port
-                        } app
+            forkIO $ {-runSettings-} runTLS (TLSSettings "/tmp/work/ecksy.crt" "/tmp/work/ecksy.key")
+                            defaultSettings { settingsPort = port
+                                            } app
             loop
 
     case r of
