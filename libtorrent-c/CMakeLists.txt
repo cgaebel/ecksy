@@ -10,3 +10,9 @@ include(cmake/FindLibTorrent.cmake)
 add_library(libtorrent-c SHARED
                 libtorrent-c.cpp)
 target_link_libraries(libtorrent-c ${LIBTORRENT_LIBRARY})
+
+install(TARGETS libtorrent-c
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)

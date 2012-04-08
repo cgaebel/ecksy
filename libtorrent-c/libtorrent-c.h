@@ -1,7 +1,10 @@
 #pragma once
-#include <stdbool.h>
 
+#ifdef __cplusplus
 extern "C" {
+#else
+#include <stdbool.h>
+#endif
 
 // BEGIN sha1_hash //
 struct sha1_hash;
@@ -91,4 +94,6 @@ struct ip_filter* get_ip_filter(const struct session*);
 void free_session(struct session*);
 // END session //
 
+#ifdef __cplusplus
 }
+#endif
