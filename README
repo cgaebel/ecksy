@@ -2,14 +2,34 @@ We have a few subdirectories of interest in here.
 
 1) libtorrent
       This is a trunk version of libtorrent. I update it semi-regularly. Make
-      sure to configure and install this before moving on to libtorrent-c
+      sure to configure and install this before moving on to libtorrent-c.
+
+      $ cd libtorrent
+      $ bjam -j4 boost=system boost-link=shared dht-support=on geoip=off upnp-logging=off link=shared variant=release invariant-checks=on debug-symbols=off
+      $ sudo bjam install
 
 2) libtorrent-c
       The C bindings to the parts of libtorrent we need. After installing
-      libtorrent-trunk, use CMake to build this DSO. It will be dynamically
-      linked into the Ecksy executable.
+      libtorrent-trunk, use CMake to build and install this DSO. It will be
+      dynamically linked into the Ecksy executable.
+
+      $ cd libtorrent-c
+      $ mkdir build
+      $ cd build
+      $ cmake ..
+      $ sudo make install
 
 3) ecksy
       This is the actual webserver we will use to serve the torrents. It's
       based off of Yesod, and uses libtorrent-c to do the interfacing with
       libtorrent, which, in turn, does all the heavy lifting.
+
+      $ cd ecksy
+      $ cabal install yesod
+      $ yesod --dev devel # Starts the debug server. Should need no setup.
+
+      Then, every time you make a change to the project, just run:
+
+      $ yesod --dev devel
+
+      from within the ecksy directory.
