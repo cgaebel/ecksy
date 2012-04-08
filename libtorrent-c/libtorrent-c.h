@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #else
@@ -49,9 +51,12 @@ void resume_torrent(struct torrent_handle*);
 bool is_paused(const struct torrent_handle*);
 bool is_seed(const struct torrent_handle*); // are we seeding?
 struct sha1_hash* info_hash(const struct torrent_handle*);
-float torrent_progress(const struct torrent_handle*);
+float torrent_progress(const struct torrent_handle*); // [0.0, 1.0]
 int torrent_download_rate(const struct torrent_handle*);
 int torrent_upload_rate(const struct torrent_handle*);
+size_t total_torrent_size(const struct torrent_handle*);
+size_t total_downloaded(const struct torrent_handle*);
+void move_storage(struct torrent_handle*, const char* new_path);
 
 // 0 = queued for checking
 // 1 = checking files

@@ -22,6 +22,9 @@ module Torrent.C ( Sha1Hash
                        , torrentProgress
                        , torrentDownloadRate
                        , torrentUploadRate
+                       , torrentSize
+                       , totalDownloaded
+                       , moveStorage
                        , torrentState
 
                        , makeSession
@@ -75,6 +78,9 @@ data LTor = LTor { makeIPFilter :: IO IPFilter
                  , torrentProgress :: Torrent -> IO Double
                  , torrentDownloadRate :: Torrent -> IO Int
                  , torrentUploadRate :: Torrent -> IO Int
+                 , torrentSize :: Torrent -> IO Integer
+                 , totalDownloaded :: Torrent -> IO Integer
+                 , moveStorage :: Torrent -> String -> IO ()
                  , torrentState :: Torrent -> IO TorrentState
 
                  , makeSession :: IO Session
@@ -229,6 +235,23 @@ mkGetTorrentRate :: FunPtr GetTorrentLimit -> GetTorrentLimit
 mkGetTorrentRate = mkGetTorrentLimit
 adaptGetTorrentRate :: GetTorrentLimit -> Torrent -> IO Int
 adaptGetTorrentRate = adaptGetTorrentLimit
+
+type TorrentTotalSize = Ptr Torrent_ -> IO CSize
+foreign import ccall "dynamic"
+    mkTorrentTotalSize :: FunPtr TorrentTotalSize -> TorrentTotalSize
+
+adaptTorrentTotalSize :: TorrentTotalSize -> (Torrent -> IO Integer)
+adaptTorrentTotalSize f (TOR fp) = withForeignPtr fp $ \p ->
+                                   fromIntegral <$> f p
+
+type MoveStorage = Ptr Torrent_ -> CString -> IO ()
+foreign import ccall "dynamic"
+    mkMoveStorage :: FunPtr MoveStorage -> MoveStorage
+
+adaptMoveStorage :: MoveStorage -> (Torrent -> String -> IO ())
+adaptMoveStorage f (TOR fp) s = withForeignPtr fp $ \p ->
+                                withCString s $ \cs ->
+                                f p cs
 
 type TorrentStateFunc = Ptr Torrent_ ->  IO CInt
 foreign import ccall "dynamic"
@@ -385,6 +408,9 @@ withLibTorrent f = withDL "liblibtorrent-c.so" [ RTLD_LAZY ] $ \dl -> runErrorT 
                                         <*> (adaptTorrentProgress    <$> mkTorrentProgress  <$> getFunc dl "torrent_progress")
                                         <*> (adaptGetTorrentRate     <$> mkGetTorrentRate   <$> getFunc dl "torrent_download_rate")
                                         <*> (adaptGetTorrentRate     <$> mkGetTorrentRate   <$> getFunc dl "torrent_upload_rate")
+                                        <*> (adaptTorrentTotalSize   <$> mkTorrentTotalSize <$> getFunc dl "total_torrent_size")
+                                        <*> (adaptTorrentTotalSize   <$> mkTorrentTotalSize <$> getFunc dl "total_downloaded")
+                                        <*> (adaptMoveStorage        <$> mkMoveStorage      <$> getFunc dl "move_storage")
                                         <*> (adaptTorrentState       <$> mkTorrentState     <$> getFunc dl "torrent_state")
 
                                         <*> (adaptMakeSession f_ses  <$> mkMakeSession      <$> getFunc dl "make_session")

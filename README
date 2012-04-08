@@ -8,6 +8,11 @@ We have a few subdirectories of interest in here.
       $ bjam -j4 boost=system boost-link=shared dht-support=on geoip=off upnp-logging=off link=shared variant=release invariant-checks=on debug-symbols=off
       $ sudo bjam install
 
+      If you don't already have it in your LD_LIBRARY_PATH, add /usr/local/lib.
+      This will ensure our libraries get picked up by the dynamic linker.
+
+      $ echo 'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib' >> ~/.bashrc
+
 2) libtorrent-c
       The C bindings to the parts of libtorrent we need. After installing
       libtorrent-trunk, use CMake to build and install this DSO. It will be

@@ -34,6 +34,7 @@ library
                      Settings.StaticFiles
                      Handler.Home
                      Torrent.C
+                     Torrent.Ops
 
     ghc-options:   -Wall -threaded -O0
     cpp-options:   -DDEVELOPMENT

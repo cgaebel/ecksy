@@ -20,11 +20,12 @@
 #include <vector>
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 extern "C" {
 
-#define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error: %s\n", e.what()); } \
+#define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error :%i: %s\n", __LINE__, e.what()); } \
                                    catch(...) { assert(0); }
 // BEGIN sha1_hash //
 
@@ -101,73 +102,95 @@ static char* str2str(const std::string& s)
     return r;
 }
 
-#define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error: %s\n", e.what()); } \
-                                   catch(...) { assert(0); }
-
-
 char* torrent_save_path(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return str2str(h->h.save_path()));
+
     return NULL;
 }
 
 char* torrent_name(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return str2str(h->h.name()));
+
     return NULL;
 }
 
 void set_ratio(struct torrent_handle* h, float ratio)
 {
+    assert(h);
+
     WRAP(h->h.set_upload_limit(h->h.download_limit()*ratio));
 }
 
 void set_torrent_upload_limit(struct torrent_handle* h, int limit)
 {
+    assert(h);
+
     WRAP(h->h.set_upload_limit(limit));
 }
 
 int get_torrent_upload_limit(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.upload_limit());
     return 0;
 }
 
 void set_torrent_download_limit(struct torrent_handle* h, int limit)
 {
+    assert(h);
+
     WRAP(h->h.set_download_limit(limit));
 }
 
 int get_torrent_download_limit(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.download_limit());
     return 0;
 }
 
 void pause_torrent(struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(h->h.pause());
 }
 
 void resume_torrent(struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(h->h.resume());
 }
 
 bool is_paused(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.status().paused);
     return false;
 }
 
 bool is_seed(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.status().seed_mode);
     return false;
 }
 
 struct sha1_hash* info_hash(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(
         std::auto_ptr<struct sha1_hash> hash(new sha1_hash);
         hash->h = h->h.info_hash();
@@ -179,20 +202,53 @@ struct sha1_hash* info_hash(const struct torrent_handle* h)
 
 float torrent_progress(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.status().progress);
     return 0.0f;
 }
 
 int torrent_download_rate(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.status().download_rate);
     return 0;
 }
 
 int torrent_upload_rate(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(return h->h.status().upload_rate);
     return 0;
+}
+
+size_t total_torrent_size(const struct torrent_handle* h)
+{
+    assert(h);
+
+    WRAP(return h->h.status().total_wanted);
+    return 1; // stops a divide by 0 on error.
+}
+
+size_t total_downloaded(const struct torrent_handle* h)
+{
+    assert(h);
+
+    WRAP(return h->h.status().total_wanted_done);
+    return 0;
+}
+
+void move_storage (struct torrent_handle* h, const char* new_path)
+{
+    assert(h);
+    assert(new_path);
+
+    WRAP(
+        if(!h->h.get_storage_impl()->move_storage(new_path))
+            printf("Error moving storage for %s to %s.", h->h.name().c_str(), new_path);
+    )
 }
 
 // 0 = queued for checking
@@ -205,6 +261,8 @@ int torrent_upload_rate(const struct torrent_handle* h)
 // 7 = checking resume data
 int torrent_state(const struct torrent_handle* h)
 {
+    assert(h);
+
     WRAP(h->h.status().state);
     return -1;
 }
@@ -283,6 +341,10 @@ struct session* make_session()
 
 struct torrent_handle* add_magnet_uri(struct session* s, const char* uri, const char* targetPath)
 {
+    assert(s);
+    assert(uri);
+    assert(targetPath);
+
     WRAP(
 
     libtorrent::add_torrent_params params;
@@ -301,27 +363,39 @@ struct torrent_handle* add_magnet_uri(struct session* s, const char* uri, const 
 
 void pause_session(struct session* s)
 {
+    assert(s);
+
     WRAP(s->s.pause());
 }
 
 void resume_session(struct session* s)
 {
+    assert(s);
+
     WRAP(s->s.resume());
 }
 
 bool is_session_paused(struct session* s)
 {
+    assert(s);
+
     WRAP(return s->s.is_paused());
     return false;
 }
 
 void remove_torrent(struct session* s, struct torrent_handle* h, bool delete_files)
 {
+    assert(s);
+    assert(h);
+
     WRAP(s->s.remove_torrent(h->h, delete_files ? libtorrent::session::delete_files : 0));
 }
 
 struct torrent_handle* find_torrent(struct session* s, const struct sha1_hash* h)
 {
+    assert(s);
+    assert(h);
+
     WRAP(return new torrent_handle(s->s.find_torrent(h->h)));
     return NULL;
 }
@@ -339,6 +413,8 @@ static inline std::vector<struct torrent_handle*> heapify(const std::vector<libt
 
 struct torrent_list* get_torrents(const struct session* s)
 {
+    assert(s);
+
     WRAP(return new torrent_list(heapify(s->s.get_torrents())));
     return NULL;
 }
@@ -346,22 +422,30 @@ struct torrent_list* get_torrents(const struct session* s)
 // rate limiting
 void set_session_upload_rate_limit(struct session* s, int bytes_per_second)
 {
+    assert(s);
+
     WRAP(s->s.set_upload_rate_limit(bytes_per_second));
 }
 
 int session_upload_rate_limit(const struct session* s)
 {
+    assert(s);
+
     WRAP(return s->s.upload_rate_limit());
     return 0;
 }
 
 void set_session_download_rate_limit(struct session* s, int bytes_per_second)
 {
+    assert(s);
+
     WRAP(s->s.set_download_rate_limit(bytes_per_second));
 }
 
 int session_download_rate_limit(const struct session* s)
 {
+    assert(s);
+
     WRAP(return s->s.download_rate_limit());
     return 0;
 }
@@ -369,6 +453,9 @@ int session_download_rate_limit(const struct session* s)
 // ip filtering
 void set_ip_filter(struct session* s, struct ip_filter* f)
 {
+    assert(s);
+    assert(f);
+
     WRAP(s->s.set_ip_filter(f->f));
 }
 
