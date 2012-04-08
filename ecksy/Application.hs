@@ -21,6 +21,8 @@ import qualified Database.Persist.Store
 import Database.Persist.GenericSql (runMigration)
 import Network.HTTP.Conduit (newManager, def)
 
+import Torrent
+
 -- Import all relevant handler modules here.
 import Handler.Home
 
@@ -33,9 +35,9 @@ mkYesodDispatch "App" resourcesApp
 -- performs initialization and creates a WAI application. This is also the
 -- place to put your migrate statements to have automatic database
 -- migrations handled by Yesod.
-makeApplication :: AppConfig DefaultEnv Extra -> Logger -> IO Application
-makeApplication conf logger = do
-    foundation <- makeFoundation conf setLogger
+makeApplication :: LTor -> AppConfig DefaultEnv Extra -> Logger -> IO Application
+makeApplication lTor conf logger = do
+    foundation <- makeFoundation lTor conf setLogger
     app <- toWaiAppPlain foundation
     return $ logWare app
   where
@@ -47,8 +49,8 @@ makeApplication conf logger = do
     logWare = logCallback (logBS setLogger)
 #endif
 
-makeFoundation :: AppConfig DefaultEnv Extra -> Logger -> IO App
-makeFoundation conf setLogger = do
+makeFoundation :: LTor -> AppConfig DefaultEnv Extra -> Logger -> IO App
+makeFoundation lTor conf setLogger = do
     manager <- newManager def
     s <- staticSite
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
@@ -56,12 +58,13 @@ makeFoundation conf setLogger = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    return $ App conf setLogger s p manager dbconf
+    sesh <- makeSession lTor
+    return $ App conf setLogger s p manager dbconf lTor sesh
 
 -- for yesod devel
-getApplicationDev :: IO (Int, Application)
+getApplicationDev :: LTor -> IO (Int, Application)
 getApplicationDev =
-    defaultDevelApp loader makeApplication
+    defaultDevelApp loader . makeApplication
   where
     loader = loadConfig (configSettings Development)
         { csParseExtra = parseExtra

@@ -361,7 +361,7 @@ adaptSetIPFilter f (SES s') (IPF filt) = withForeignPtr s' $ \s ->
 --   be in Left. Otherwise, the passed function will be executed with a valid
 --   LibTorrent instance.
 withLibTorrent :: (LTor -> IO a) -> IO (Either String a)
-withLibTorrent f = withDL "liblibtorrent-c.so" [RTLD_LAZY] $ \dl -> runErrorT $ do
+withLibTorrent f = withDL "liblibtorrent-c.so" [ RTLD_LAZY ] $ \dl -> runErrorT $ do
                     f_s1h   <- getFreeFunc dl "free_sha1_hash"
                     f_ipf   <- getFreeFunc dl "free_ip_filter"
                     f_th    <- getFreeFunc dl "free_torrent_handle"

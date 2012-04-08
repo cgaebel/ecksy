@@ -22,6 +22,8 @@
 #include <assert.h>
 #include <string.h>
 
+extern "C" {
+
 #define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error: %s\n", e.what()); } \
                                    catch(...) { assert(0); }
 // BEGIN sha1_hash //
@@ -142,7 +144,7 @@ int get_torrent_download_limit(const struct torrent_handle* h)
     return 0;
 }
 
-void pause_torrent(const struct torrent_handle* h)
+void pause_torrent(struct torrent_handle* h)
 {
     WRAP(h->h.pause());
 }
@@ -373,4 +375,6 @@ void set_ip_filter(struct session* s, struct ip_filter* f)
 void free_session(struct session* s)
 {
     delete s;
+}
+
 }

@@ -7,14 +7,22 @@ import System.Directory (doesFileExist, removeFile)
 import System.Exit (exitSuccess)
 import Control.Concurrent (threadDelay)
 
+import "ecksy" Torrent ( withLibTorrent )
+
 main :: IO ()
 main = do
     putStrLn "Starting devel application"
-    (port, app) <- getApplicationDev
-    forkIO $ runSettings defaultSettings
-        { settingsPort = port
-        } app
-    loop
+    r <- withLibTorrent $ \lTor -> do
+            (port, app) <- getApplicationDev lTor
+            forkIO $ runSettings defaultSettings
+                        { settingsPort = port
+                        } app
+            loop
+
+    case r of
+        Left msg -> do putStrLn $ "[!!] Error: " ++ msg
+                       main
+        Right _  -> return ()
 
 loop :: IO ()
 loop = do
