@@ -4,25 +4,31 @@ import Settings             (parseExtra)
 
 import Import
 
-import Application          (makeApplication)
+import Application          (makeApplication, selectRunner)
 
 import Yesod.Default.Config
 import Yesod.Logger (defaultDevelopmentLogger)
 import Network.Wai.Handler.Warp
-    (runSettings, defaultSettings, settingsPort, settingsHost)
+    (defaultSettings, settingsPort, settingsHost)
 
-import Network.Wai.Handler.WarpTLS
+import Init
 
 import Torrent.C
+
+-- | TODO: Move to config.
+updateFrequency :: Integer
+updateFrequency = 24*60*60
 
 main :: IO ()
 main = do r <- withLibTorrent $ \lt -> do
                config <- fromArgs parseExtra
                logger <- defaultDevelopmentLogger
-               app <- makeApplication lt config logger
+               sesh <- makeSession lt
+               keepUpdated lt sesh $ fromIntegral updateFrequency
+               app <- makeApplication lt sesh config logger
                print $ appHost config
-               runTLS {-runSettings-} (TLSSettings "/tmp/work/ecksy.crt" "/tmp/work/ecksy.key")
-                      defaultSettings { settingsPort = appPort config
+               runner <- selectRunner
+               runner defaultSettings { settingsPort = appPort config
                                       , settingsHost = appHost config
                                       } app
           case r of

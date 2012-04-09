@@ -25,6 +25,7 @@ import Torrent
 
 -- Import all relevant handler modules here.
 import Handler.Home
+import Handler.UpdateTorrents
 
 -- This line actually creates our YesodSite instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see
@@ -35,9 +36,9 @@ mkYesodDispatch "App" resourcesApp
 -- performs initialization and creates a WAI application. This is also the
 -- place to put your migrate statements to have automatic database
 -- migrations handled by Yesod.
-makeApplication :: LTor -> AppConfig DefaultEnv Extra -> Logger -> IO Application
-makeApplication lTor conf logger = do
-    foundation <- makeFoundation lTor conf setLogger
+makeApplication :: LTor -> Session -> AppConfig DefaultEnv Extra -> Logger -> IO Application
+makeApplication lTor sesh conf logger = do
+    foundation <- makeFoundation lTor sesh conf setLogger
     app <- toWaiAppPlain foundation
     return $ logWare app
   where
@@ -49,8 +50,8 @@ makeApplication lTor conf logger = do
     logWare = logCallback (logBS setLogger)
 #endif
 
-makeFoundation :: LTor -> AppConfig DefaultEnv Extra -> Logger -> IO App
-makeFoundation lTor conf setLogger = do
+makeFoundation :: LTor -> Session -> AppConfig DefaultEnv Extra -> Logger -> IO App
+makeFoundation lTor sesh conf setLogger = do
     manager <- newManager def
     s <- staticSite
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
@@ -58,13 +59,12 @@ makeFoundation lTor conf setLogger = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    sesh <- makeSession lTor
     return $ App conf setLogger s p manager dbconf lTor sesh
 
 -- for yesod devel
-getApplicationDev :: LTor -> IO (Int, Application)
-getApplicationDev =
-    defaultDevelApp loader . makeApplication
+getApplicationDev :: LTor -> Session -> IO (Int, Application)
+getApplicationDev lt s =
+    defaultDevelApp loader $ makeApplication lt s
   where
     loader = loadConfig (configSettings Development)
         { csParseExtra = parseExtra

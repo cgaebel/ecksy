@@ -3,3 +3,5 @@ cabal-dev
 .ghci
 ecksy.sqlite3
 ecksy.production.sqlite3
+static/tmp
+config/cert

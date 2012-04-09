@@ -1,11 +1,23 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Torrent.Ops ( SessionSummary(..)
                    , TorrentSummary(..)
                    , getSessionSummary
                    , getTorrentSummary
                    ) where
 
+import Prelude ( Int
+               , Integer
+               , Double
+               , Bool
+               , IO
+               )
+
+import Control.Applicative
+import Control.Monad
+import Data.Aeson.TH
+import qualified Data.List as L
 import Data.Text
-import Import
+
 import Torrent.C
 
 data TorrentSummary = TSummary { torName :: Text
@@ -19,8 +31,10 @@ data TorrentSummary = TSummary { torName :: Text
                                , torTotalDownloaded :: Integer
                                , torProgress :: Double -- ^ In the range [0, 1]
                                , torPaused :: Bool
-                               , torInfoHash :: Sha1Hash
+                               , torInfoHash :: Text
                                }
+
+$(deriveJSON (L.drop 3) ''TorrentSummary)
 
 data SessionSummary = SSummary { sesPaused :: Bool
                                , sesUploadLimit :: Int
@@ -28,9 +42,11 @@ data SessionSummary = SSummary { sesPaused :: Bool
                                , sesTorrents :: [TorrentSummary]
                                }
 
+$(deriveJSON (L.drop 3) ''SessionSummary)
+
 getTorrentSummary :: LTor -> Torrent -> IO TorrentSummary
-getTorrentSummary lt t = TSummary <$> (pack <$> torrentName lt t)
-                                  <*> (pack <$> torrentSavePath lt t)
+getTorrentSummary lt t = TSummary <$> torrentName lt t
+                                  <*> torrentSavePath lt t
                                   <*> torrentState lt t
                                   <*> torrentDownloadRate lt t
                                   <*> torrentUploadRate lt t

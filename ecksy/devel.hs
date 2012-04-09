@@ -7,17 +7,23 @@ import System.Directory (doesFileExist, removeFile)
 import System.Exit (exitSuccess)
 import Control.Concurrent (threadDelay)
 
-import Network.Wai.Handler.WarpTLS
+import "ecksy" Torrent ( makeSession, withLibTorrent )
 
-import "ecksy" Torrent ( withLibTorrent )
+import "ecksy" Init
+
+-- | TODO: Move to config.
+updateFrequency :: Integer
+updateFrequency = 24*60*60
 
 main :: IO ()
 main = do
     putStrLn "Starting devel application"
     r <- withLibTorrent $ \lTor -> do
-            (port, app) <- getApplicationDev lTor
-            forkIO $ {-runSettings-} runTLS (TLSSettings "/tmp/work/ecksy.crt" "/tmp/work/ecksy.key")
-                            defaultSettings { settingsPort = port
+            sesh <- makeSession lTor
+            keepUpdated lTor [sesh] $ fromIntegral updateFrequency
+            (port, app) <- getApplicationDev lTor sesh
+            runner <- selectRunner
+            forkIO $ runner defaultSettings { settingsPort = port
                                             } app
             loop
 

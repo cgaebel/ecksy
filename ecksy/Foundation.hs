@@ -1,5 +1,6 @@
 module Foundation
     ( App (..)
+    , getTorSession
     , Route (..)
     , AppMessage (..)
     , resourcesApp
@@ -48,6 +49,9 @@ data App = App
     , tor :: LTor
     , torSession :: Session
     }
+
+getTorSession :: App -> (LTor, Session)
+getTorSession a = (tor a, torSession a)
 
 -- Set up i18n messages. See the message folder.
 mkMessage "App" "messages" "en"

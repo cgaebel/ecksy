@@ -1,6 +1,5 @@
-{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
-module Torrent.C ( Sha1Hash
-                 , IPFilter
+{-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls, TemplateHaskell #-}
+module Torrent.C ( IPFilter
                  , Torrent
                  , TorrentState(..)
                  , Session
@@ -50,6 +49,9 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Error
 
+import Data.Aeson.TH
+import Data.Text
+
 import Prelude
 import System.Posix.DynamicLinker
 
@@ -60,11 +62,20 @@ import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Ptr
 
-data LTor = LTor { makeIPFilter :: IO IPFilter
-                 , addFilteredRange :: IPFilter -> String -> String -> IO ()
+data IPFilter_
+newtype IPFilter = IPF (ForeignPtr IPFilter_)
 
-                 , torrentSavePath :: Torrent -> IO String
-                 , torrentName :: Torrent -> IO String
+data Torrent_
+newtype Torrent = TOR (ForeignPtr Torrent_)
+
+data Session_
+newtype Session = SES (ForeignPtr Session_)
+
+data LTor = LTor { makeIPFilter :: IO IPFilter
+                 , addFilteredRange :: IPFilter -> Text -> Text -> IO ()
+
+                 , torrentSavePath :: Torrent -> IO Text
+                 , torrentName :: Torrent -> IO Text
                  , setRatio :: Torrent -> Double -> IO ()
                  , setTorrentUploadLimit :: Torrent -> Int -> IO ()
                  , torrentUploadLimit :: Torrent -> IO Int
@@ -74,22 +85,22 @@ data LTor = LTor { makeIPFilter :: IO IPFilter
                  , resumeTorrent :: Torrent -> IO ()
                  , isPaused :: Torrent -> IO Bool
                  , isSeed :: Torrent -> IO Bool
-                 , infoHash :: Torrent -> IO Sha1Hash
+                 , infoHash :: Torrent -> IO Text
                  , torrentProgress :: Torrent -> IO Double
                  , torrentDownloadRate :: Torrent -> IO Int
                  , torrentUploadRate :: Torrent -> IO Int
                  , torrentSize :: Torrent -> IO Integer
                  , totalDownloaded :: Torrent -> IO Integer
-                 , moveStorage :: Torrent -> String -> IO ()
+                 , moveStorage :: Torrent -> Text -> IO ()
                  , torrentState :: Torrent -> IO TorrentState
 
                  , makeSession :: IO Session
-                 , addMagnetURI :: Session -> String -> String -> IO Torrent
+                 , addMagnetURI :: Session -> Text -> Text -> IO Torrent
                  , pauseSession :: Session -> IO ()
                  , resumeSession :: Session -> IO ()
                  , isSessionPaused :: Session -> IO Bool
                  , removeTorrent :: Session -> Torrent -> Bool -> IO ()
-                 , findTorrent :: Session -> Sha1Hash -> IO (Maybe Torrent)
+                 , findTorrent :: Session -> Text -> IO (Maybe Torrent)
                  , getTorrents :: Session -> IO [Torrent]
                  , setSessionUploadRateLimit :: Session -> Int -> IO ()
                  , sessionUploadRateLimit :: Session -> IO Int
@@ -108,19 +119,12 @@ data TorrentState = QueuedForChecking
                   | CheckingResumeData
     deriving (Show, Enum, Bounded)
 
-data Sha1Hash_
-newtype Sha1Hash = SH1 (ForeignPtr Sha1Hash_)
-
-data IPFilter_
-newtype IPFilter = IPF (ForeignPtr IPFilter_)
-
-data Torrent_
-newtype Torrent = TOR (ForeignPtr Torrent_)
-
-data Session_
-newtype Session = SES (ForeignPtr Session_)
+$(deriveJSON id ''TorrentState)
 
 type Err = String
+
+withText :: Text -> (CString -> IO a) -> IO a
+withText t = withCString (unpack t)
 
 validateFPtr :: String -> FunPtr a -> ErrorT Err IO (FunPtr a)
 validateFPtr m f | f == nullFunPtr = throwError $ m ++ " should not be null!"
@@ -146,9 +150,9 @@ type AddFilteredRange = Ptr IPFilter_ -> CString -> CString -> IO ()
 foreign import ccall "dynamic"
     mkAddFilteredRange :: FunPtr AddFilteredRange -> AddFilteredRange
 
-adaptAddFilteredRange :: AddFilteredRange -> (IPFilter -> String -> String -> IO ())
-adaptAddFilteredRange f (IPF fp) start' end' = withCString start' $ \start ->
-                                               withCString end'   $ \end ->
+adaptAddFilteredRange :: AddFilteredRange -> (IPFilter -> Text -> Text -> IO ())
+adaptAddFilteredRange f (IPF fp) start' end' = withText start' $ \start ->
+                                               withText end'   $ \end ->
                                                withForeignPtr fp  $ \p ->
                                                    f p start end
 
@@ -156,19 +160,19 @@ type TorrentSavePath = Ptr Torrent_ -> IO CString
 foreign import ccall "dynamic"
     mkTorrentSavePath :: FunPtr TorrentSavePath -> TorrentSavePath
 
-adaptTorrentSavePath :: TorrentSavePath -> (Torrent -> IO String)
+adaptTorrentSavePath :: TorrentSavePath -> (Torrent -> IO Text)
 adaptTorrentSavePath f (TOR fp) = withForeignPtr fp $ \p -> do
                                   cstr <- nullCheck <$> f p
                                   str <- peekCString =<< f p
                                   free cstr
-                                  return str
+                                  return $ pack str
 
 type TorrentName = TorrentSavePath
 
 mkTorrentName :: FunPtr TorrentName -> TorrentName
 mkTorrentName = mkTorrentSavePath
 
-adaptTorrentName :: TorrentName -> (Torrent -> IO String)
+adaptTorrentName :: TorrentName -> (Torrent -> IO Text)
 adaptTorrentName = adaptTorrentSavePath
 
 type SetRatio = Ptr Torrent_ -> CFloat -> IO ()
@@ -213,14 +217,13 @@ adaptTorrentBool f (TOR fp) = withForeignPtr fp $ \p -> do
                                 0 -> return False
                                 _ -> return True
 
-type InfoHash = Ptr Torrent_ -> IO (Ptr Sha1Hash_)
-foreign import ccall "dynamic"
-    mkInfoHash :: FunPtr InfoHash -> InfoHash
+type InfoHash = Ptr Torrent_ -> IO CString
 
-adaptInfoHash :: FunPtr (Ptr Sha1Hash_ -> IO ()) -> InfoHash -> (Torrent -> IO Sha1Hash)
-adaptInfoHash freeFunc f (TOR fp) = withForeignPtr fp $ \p -> do
-                                    h <- nullCheck <$> f p
-                                    SH1 <$> newForeignPtr freeFunc h
+mkInfoHash :: FunPtr TorrentSavePath -> TorrentSavePath
+mkInfoHash = mkTorrentSavePath
+
+adaptInfoHash :: InfoHash -> (Torrent -> IO Text)
+adaptInfoHash = adaptTorrentSavePath
 
 type TorrentProgress = Ptr Torrent_ -> IO CFloat
 foreign import ccall "dynamic"
@@ -248,9 +251,9 @@ type MoveStorage = Ptr Torrent_ -> CString -> IO ()
 foreign import ccall "dynamic"
     mkMoveStorage :: FunPtr MoveStorage -> MoveStorage
 
-adaptMoveStorage :: MoveStorage -> (Torrent -> String -> IO ())
+adaptMoveStorage :: MoveStorage -> (Torrent -> Text -> IO ())
 adaptMoveStorage f (TOR fp) s = withForeignPtr fp $ \p ->
-                                withCString s $ \cs ->
+                                withText s $ \cs ->
                                 f p cs
 
 type TorrentStateFunc = Ptr Torrent_ ->  IO CInt
@@ -272,10 +275,10 @@ type AddMagnetURI = Ptr Session_ -> CString -> CString -> IO (Ptr Torrent_)
 foreign import ccall "dynamic"
     mkAddMagnetURI :: FunPtr AddMagnetURI -> AddMagnetURI
 
-adaptAddMagnetURI :: FunPtr (Ptr Torrent_ -> IO ()) -> AddMagnetURI -> (Session -> String -> String -> IO Torrent)
+adaptAddMagnetURI :: FunPtr (Ptr Torrent_ -> IO ()) -> AddMagnetURI -> (Session -> Text -> Text -> IO Torrent)
 adaptAddMagnetURI freeFunc f (SES s') uri' tgt' = withForeignPtr s' $ \s ->
-                                                  withCString uri' $ \uri ->
-                                                  withCString tgt' $ \tgt ->
+                                                  withText uri' $ \uri ->
+                                                  withText tgt' $ \tgt ->
                                                   TOR <$> (newForeignPtr freeFunc =<< nullCheck <$> f s uri tgt)
 
 type SessionAction = Ptr Session_ -> IO ()
@@ -305,14 +308,14 @@ adaptRemoveTorrent f (SES s') (TOR t') del = withForeignPtr s' $ \s ->
                                              withForeignPtr t' $ \t ->
                                              f s t . fromIntegral $ fromEnum del
 
-type FindTorrent = Ptr Session_ -> Ptr Sha1Hash_ -> IO (Ptr Torrent_)
+type FindTorrent = Ptr Session_ -> CString -> IO (Ptr Torrent_)
 foreign import ccall "dynamic"
     mkFindTorrent :: FunPtr FindTorrent -> FindTorrent
 
-adaptFindTorrent :: FunPtr (Ptr Torrent_ -> IO ()) -> FindTorrent -> (Session -> Sha1Hash -> IO (Maybe Torrent))
-adaptFindTorrent freeFunc f (SES s') (SH1 h') = withForeignPtr s' $ \s ->
-                                                withForeignPtr h' $ \h ->
-                                                getRet =<< f s h
+adaptFindTorrent :: FunPtr (Ptr Torrent_ -> IO ()) -> FindTorrent -> (Session -> Text -> IO (Maybe Torrent))
+adaptFindTorrent freeFunc f (SES s') h' = withForeignPtr s' $ \s ->
+                                          withText h' $ \h ->
+                                          getRet =<< f s h
     where
         getRet p | p == nullPtr = return Nothing
                  | otherwise   = Just . TOR <$> newForeignPtr freeFunc p
@@ -385,44 +388,43 @@ adaptSetIPFilter f (SES s') (IPF filt) = withForeignPtr s' $ \s ->
 --   LibTorrent instance.
 withLibTorrent :: (LTor -> IO a) -> IO (Either String a)
 withLibTorrent f = withDL "liblibtorrent-c.so" [ RTLD_LAZY ] $ \dl -> runErrorT $ do
-                    f_s1h   <- getFreeFunc dl "free_sha1_hash"
                     f_ipf   <- getFreeFunc dl "free_ip_filter"
                     f_th    <- getFreeFunc dl "free_torrent_handle"
                     f_ses   <- getFreeFunc dl "free_session"
 
-                    liftIO . f =<< LTor <$> (adaptMakeIPFilter f_ipf <$> mkMakeIPFilter     <$> getFunc dl "make_ip_filter")
-                                        <*> (adaptAddFilteredRange   <$> mkAddFilteredRange <$> getFunc dl "add_filtered_range")
+                    liftIO . f =<< LTor <$> (adaptMakeIPFilter f_ipf . mkMakeIPFilter     <$> getFunc dl "make_ip_filter")
+                                        <*> (adaptAddFilteredRange   . mkAddFilteredRange <$> getFunc dl "add_filtered_range")
 
-                                        <*> (adaptTorrentSavePath    <$> mkTorrentSavePath  <$> getFunc dl "torrent_save_path")
-                                        <*> (adaptTorrentName        <$> mkTorrentName      <$> getFunc dl "torrent_name")
-                                        <*> (adaptSetRatio           <$> mkSetRatio         <$> getFunc dl "set_ratio")
-                                        <*> (adaptSetTorrentLimit    <$> mkSetTorrentLimit  <$> getFunc dl "set_torrent_upload_limit")
-                                        <*> (adaptGetTorrentLimit    <$> mkGetTorrentLimit  <$> getFunc dl "get_torrent_upload_limit")
-                                        <*> (adaptSetTorrentLimit    <$> mkSetTorrentLimit  <$> getFunc dl "set_torrent_download_limit")
-                                        <*> (adaptGetTorrentLimit    <$> mkGetTorrentLimit  <$> getFunc dl "get_torrent_download_limit")
-                                        <*> (adaptTorrentAction      <$> mkTorrentAction    <$> getFunc dl "pause_torrent")
-                                        <*> (adaptTorrentAction      <$> mkTorrentAction    <$> getFunc dl "resume_torrent")
-                                        <*> (adaptTorrentBool        <$> mkTorrentBool      <$> getFunc dl "is_paused")
-                                        <*> (adaptTorrentBool        <$> mkTorrentBool      <$> getFunc dl "is_seed")
-                                        <*> (adaptInfoHash f_s1h     <$> mkInfoHash         <$> getFunc dl "info_hash")
-                                        <*> (adaptTorrentProgress    <$> mkTorrentProgress  <$> getFunc dl "torrent_progress")
-                                        <*> (adaptGetTorrentRate     <$> mkGetTorrentRate   <$> getFunc dl "torrent_download_rate")
-                                        <*> (adaptGetTorrentRate     <$> mkGetTorrentRate   <$> getFunc dl "torrent_upload_rate")
-                                        <*> (adaptTorrentTotalSize   <$> mkTorrentTotalSize <$> getFunc dl "total_torrent_size")
-                                        <*> (adaptTorrentTotalSize   <$> mkTorrentTotalSize <$> getFunc dl "total_downloaded")
-                                        <*> (adaptMoveStorage        <$> mkMoveStorage      <$> getFunc dl "move_storage")
-                                        <*> (adaptTorrentState       <$> mkTorrentState     <$> getFunc dl "torrent_state")
+                                        <*> (adaptTorrentSavePath    . mkTorrentSavePath  <$> getFunc dl "torrent_save_path")
+                                        <*> (adaptTorrentName        . mkTorrentName      <$> getFunc dl "torrent_name")
+                                        <*> (adaptSetRatio           . mkSetRatio         <$> getFunc dl "set_ratio")
+                                        <*> (adaptSetTorrentLimit    . mkSetTorrentLimit  <$> getFunc dl "set_torrent_upload_limit")
+                                        <*> (adaptGetTorrentLimit    . mkGetTorrentLimit  <$> getFunc dl "get_torrent_upload_limit")
+                                        <*> (adaptSetTorrentLimit    . mkSetTorrentLimit  <$> getFunc dl "set_torrent_download_limit")
+                                        <*> (adaptGetTorrentLimit    . mkGetTorrentLimit  <$> getFunc dl "get_torrent_download_limit")
+                                        <*> (adaptTorrentAction      . mkTorrentAction    <$> getFunc dl "pause_torrent")
+                                        <*> (adaptTorrentAction      . mkTorrentAction    <$> getFunc dl "resume_torrent")
+                                        <*> (adaptTorrentBool        . mkTorrentBool      <$> getFunc dl "is_paused")
+                                        <*> (adaptTorrentBool        . mkTorrentBool      <$> getFunc dl "is_seed")
+                                        <*> (adaptInfoHash           . mkInfoHash         <$> getFunc dl "info_hash")
+                                        <*> (adaptTorrentProgress    . mkTorrentProgress  <$> getFunc dl "torrent_progress")
+                                        <*> (adaptGetTorrentRate     . mkGetTorrentRate   <$> getFunc dl "torrent_download_rate")
+                                        <*> (adaptGetTorrentRate     . mkGetTorrentRate   <$> getFunc dl "torrent_upload_rate")
+                                        <*> (adaptTorrentTotalSize   . mkTorrentTotalSize <$> getFunc dl "total_torrent_size")
+                                        <*> (adaptTorrentTotalSize   . mkTorrentTotalSize <$> getFunc dl "total_downloaded")
+                                        <*> (adaptMoveStorage        . mkMoveStorage      <$> getFunc dl "move_storage")
+                                        <*> (adaptTorrentState       . mkTorrentState     <$> getFunc dl "torrent_state")
 
-                                        <*> (adaptMakeSession f_ses  <$> mkMakeSession      <$> getFunc dl "make_session")
-                                        <*> (adaptAddMagnetURI f_th  <$> mkAddMagnetURI     <$> getFunc dl "add_magnet_uri")
-                                        <*> (adaptSessionAction      <$> mkSessionAction    <$> getFunc dl "pause_session")
-                                        <*> (adaptSessionAction      <$> mkSessionAction    <$> getFunc dl "resume_session")
-                                        <*> (adaptSessionPaused      <$> mkSessionPaused    <$> getFunc dl "is_session_paused")
-                                        <*> (adaptRemoveTorrent      <$> mkRemoveTorrent    <$> getFunc dl "remove_torrent")
-                                        <*> (adaptFindTorrent f_th   <$> mkFindTorrent      <$> getFunc dl "find_torrent")
-                                        <*> (adaptGetTorrents dl     =<< mkGetTorrents      <$> getFunc dl "get_torrents")
-                                        <*> (adaptSetSessionLimit    <$> mkSetSessionLimit  <$> getFunc dl "set_session_upload_rate_limit")
-                                        <*> (adaptGetSessionLimit    <$> mkGetSessionLimit  <$> getFunc dl "session_upload_rate_limit")
-                                        <*> (adaptSetSessionLimit    <$> mkSetSessionLimit  <$> getFunc dl "set_session_download_rate_limit")
-                                        <*> (adaptGetSessionLimit    <$> mkGetSessionLimit  <$> getFunc dl "session_download_rate_limit")
-                                        <*> (adaptSetIPFilter        <$> mkSetIPFilter      <$> getFunc dl "set_ip_filter")
+                                        <*> (adaptMakeSession f_ses  . mkMakeSession      <$> getFunc dl "make_session")
+                                        <*> (adaptAddMagnetURI f_th  . mkAddMagnetURI     <$> getFunc dl "add_magnet_uri")
+                                        <*> (adaptSessionAction      . mkSessionAction    <$> getFunc dl "pause_session")
+                                        <*> (adaptSessionAction      . mkSessionAction    <$> getFunc dl "resume_session")
+                                        <*> (adaptSessionPaused      . mkSessionPaused    <$> getFunc dl "is_session_paused")
+                                        <*> (adaptRemoveTorrent      . mkRemoveTorrent    <$> getFunc dl "remove_torrent")
+                                        <*> (adaptFindTorrent f_th   . mkFindTorrent      <$> getFunc dl "find_torrent")
+                                        <*> (adaptGetTorrents dl    =<< mkGetTorrents     <$> getFunc dl "get_torrents")
+                                        <*> (adaptSetSessionLimit    .  mkSetSessionLimit <$> getFunc dl "set_session_upload_rate_limit")
+                                        <*> (adaptGetSessionLimit    .  mkGetSessionLimit <$> getFunc dl "session_upload_rate_limit")
+                                        <*> (adaptSetSessionLimit    .  mkSetSessionLimit <$> getFunc dl "set_session_download_rate_limit")
+                                        <*> (adaptGetSessionLimit    .  mkGetSessionLimit <$> getFunc dl "session_download_rate_limit")
+                                        <*> (adaptSetIPFilter        .  mkSetIPFilter     <$> getFunc dl "set_ip_filter")

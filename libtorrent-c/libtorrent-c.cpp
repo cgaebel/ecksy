@@ -27,16 +27,6 @@ extern "C" {
 
 #define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error :%i: %s\n", __LINE__, e.what()); } \
                                    catch(...) { assert(0); }
-// BEGIN sha1_hash //
-
-struct sha1_hash
-{
-    libtorrent::sha1_hash h;
-};
-
-void free_sha1_hash(struct sha1_hash* h) { delete h; }
-
-// END sha1_hash //
 
 // BEGIN ip_filter //
 
@@ -187,14 +177,16 @@ bool is_seed(const struct torrent_handle* h)
     return false;
 }
 
-struct sha1_hash* info_hash(const struct torrent_handle* h)
+char* info_hash(const struct torrent_handle* h)
 {
     assert(h);
 
     WRAP(
-        std::auto_ptr<struct sha1_hash> hash(new sha1_hash);
-        hash->h = h->h.info_hash();
-        return hash.release();
+        auto s = h->h.info_hash().to_string();
+        size_t n = s.length() + 1;
+        char* p = (char*)malloc(n);
+        memcpy((char*)p, s.c_str(), n);
+        return p;
     )
 
     return NULL;
@@ -391,12 +383,12 @@ void remove_torrent(struct session* s, struct torrent_handle* h, bool delete_fil
     WRAP(s->s.remove_torrent(h->h, delete_files ? libtorrent::session::delete_files : 0));
 }
 
-struct torrent_handle* find_torrent(struct session* s, const struct sha1_hash* h)
+struct torrent_handle* find_torrent(struct session* s, const char* h)
 {
     assert(s);
     assert(h);
 
-    WRAP(return new torrent_handle(s->s.find_torrent(h->h)));
+    WRAP(return new torrent_handle(s->s.find_torrent(libtorrent::sha1_hash(h))));
     return NULL;
 }
 

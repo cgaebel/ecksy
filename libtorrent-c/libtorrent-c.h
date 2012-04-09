@@ -8,13 +8,6 @@ extern "C" {
 #include <stdbool.h>
 #endif
 
-// BEGIN sha1_hash //
-struct sha1_hash;
-
-// Takes a string representation of the hash, _not_ data to be hashed.
-void free_sha1_hash(struct sha1_hash*);
-// END sha1_hash // 
-
 // BEGIN ip_filter //
 struct ip_filter;
 
@@ -50,7 +43,7 @@ void pause_torrent(struct torrent_handle*);
 void resume_torrent(struct torrent_handle*);
 bool is_paused(const struct torrent_handle*);
 bool is_seed(const struct torrent_handle*); // are we seeding?
-struct sha1_hash* info_hash(const struct torrent_handle*);
+char* info_hash(const struct torrent_handle*);
 float torrent_progress(const struct torrent_handle*); // [0.0, 1.0]
 int torrent_download_rate(const struct torrent_handle*);
 int torrent_upload_rate(const struct torrent_handle*);
@@ -83,7 +76,7 @@ void resume_session(struct session*);
 bool is_session_paused(struct session*);
 
 void remove_torrent(struct session*, struct torrent_handle*, bool delete_files);
-struct torrent_handle* find_torrent(struct session*, const struct sha1_hash*);
+struct torrent_handle* find_torrent(struct session*, const char* info_hash);
 struct torrent_list* get_torrents(const struct session*);
 
 // rate limiting
