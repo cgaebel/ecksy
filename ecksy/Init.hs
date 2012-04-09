@@ -87,11 +87,11 @@ updateBlockList :: (Text -> Text -> IO ()) -- ^ The "add range" function
 updateBlockList blockRange url = do req <- CH.parseUrl $ unpack url
                                     CH.withManager $ \man -> do
                                         CH.Response _ _ hdrs src <- CH.http req man
-                                        let needsUnzip = isJust $ lookup "application/x-gzip" hdrs
+                                        let unzipper = case isJust $ lookup "application/x-gzip" hdrs of
+                                                          True -> ungzip
+                                                          False -> CL.mapM (return . id)
                                         src
-                                          $= (if needsUnzip
-                                                then ungzip
-                                                else CL.mapM (return . id))
+                                          $= unzipper
                                           $= CB.lines
                                           $$ CL.mapM_ (liftIO . blockRange' . parseLine)
     where
