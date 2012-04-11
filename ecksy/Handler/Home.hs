@@ -1,7 +1,10 @@
 {-# LANGUAGE TupleSections, OverloadedStrings #-}
-module Handler.Home where
+module Handler.Home ( getHomeR, postHomeR ) where
 
 import Import
+
+title :: Html
+title = "Home"
 
 -- This is a handler function for the GET request method on the HomeR
 -- resource pattern. All of your resource patterns are defined in
@@ -17,7 +20,7 @@ getHomeR = do
         handlerName = "getHomeR" :: Text
     defaultLayout $ do
         aDomId <- lift newIdent
-        setTitle "Welcome To Yesod!"
+        setTitle title
         $(widgetFile "homepage")
 
 postHomeR :: Handler RepHtml
@@ -30,7 +33,7 @@ postHomeR = do
 
     defaultLayout $ do
         aDomId <- lift newIdent
-        setTitle "Welcome To Yesod!"
+        setTitle title
         $(widgetFile "homepage")
 
 sampleForm :: Form (FileInfo, Text)

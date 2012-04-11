@@ -78,19 +78,6 @@ body {
     margin: 0;
 }
 
-/* 
- * Addresses font-family inconsistency between 'textarea' and other form elements.
- */
-
-body,
-button,
-input,
-select,
-textarea {
-    font-family: sans-serif;
-}
-
-
 /* =============================================================================
    Links
    ========================================================================== */

@@ -53,7 +53,7 @@ keepUpdated lt sx dt = do updateAll
                           return ()
     where
         updateAll :: IO ()
-        updateAll = do flushOut "Updating blocklist."
+        updateAll = do flushOut "Updating blocklist..."
                        filt <- getBlocklist lt
                        mapM_ (\s -> setIPFilter lt s filt) sx
 

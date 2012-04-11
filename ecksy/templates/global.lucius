@@ -1,0 +1,41 @@
+@bgColor: #cccccc;
+@fontColor: #333333;
+
+body {
+    color:             #{fontColor};
+    background-color:  #{bgColor};
+    background-image:  url(@{StaticR img_background_gradient_png});
+    background-repeat: repeat-x;
+}
+
+@containerBgColor: #ffffff;
+@containerMargin: 40px;
+@innerContainerPadding: 18px;
+@containerDropShadowColor: #888;
+@containerBorderRadius: 10px;
+
+.container,
+.container-fluid {
+    /* Drop shadow */
+    background-color:      #{containerBgColor};
+    -webkit-border-radius: #{containerBorderRadius};
+    -moz-border-radius:    #{containerBorderRadius};
+    border-radius:         #{containerBorderRadius};
+    -moz-box-shadow:       10px 10px 5px #{containerDropShadowColor};
+    -webkit-box-shadow:    10px 10px 5px #{containerDropShadowColor};
+    box-shadow:            10px 10px 5px #{containerDropShadowColor};
+
+    padding-left:   #{innerContainerPadding};
+    padding-right:  #{innerContainerPadding};
+    padding-top:    #{innerContainerPadding};
+    padding-bottom: #{innerContainerPadding};
+
+    margin-left:   #{containerMargin};
+    margin-right:  #{containerMargin};
+    margin-top:    #{containerMargin};
+    margin-bottom: #{containerMargin};
+}
+
+.header-elem {
+    height: 120px;
+}

@@ -135,8 +135,6 @@ body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 13px;
   line-height: 18px;
-  color: #333333;
-  background-color: #ffffff;
 }
 a {
   color: #0088cc;
@@ -308,8 +306,6 @@ a:hover {
   clear: both;
 }
 .container-fluid {
-  padding-left: 20px;
-  padding-right: 20px;
   *zoom: 1;
 }
 .container-fluid:before,

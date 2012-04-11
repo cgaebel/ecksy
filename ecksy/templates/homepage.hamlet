@@ -1,4 +1,19 @@
-<h1>_{MsgHello}
+<div .row-fluid .header-elem>
+    <div .span4>
+        <a href=@{HomeR}>
+            <span .title><h1>#{title}
+    <div .span4>
+        Search/Magnet shit goes here.
+    <div .span4>
+        Config, etc.
+
+<table .table>
+    <tr>
+        <td>(0, 0)
+        <td>(0, 1)
+    <tr>
+        <td>(1, 0)
+        <td>(1, 1)
 
 <ol>
   <li>Now that you have a working project you should use the #
