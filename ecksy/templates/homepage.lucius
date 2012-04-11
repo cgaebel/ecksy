@@ -1,7 +1,19 @@
-h1 {
-    text-align: center
+h2##{aDomId} {
+    color: #990;
 }
 
-h2##{aDomId} {
-    color: #990
+.header-center {
+    text-align: center;
+}
+
+.header-left {
+    text-align: left;
+}
+
+.header-right {
+    text-align: right;
+}
+
+.td {
+    vertical-align: middle;
 }

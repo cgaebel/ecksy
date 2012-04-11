@@ -20,7 +20,10 @@ main = do
     putStrLn "Starting devel application"
     r <- withLibTorrent $ \lTor -> do
             sesh <- makeSession lTor
-            keepUpdated lTor [sesh] $ fromIntegral updateFrequency
+            -- We only fork the blacklist thread in development! Otherwise,
+            -- torrents may start connecting to blacklisted IPs before the
+            -- blacklist has time to load.
+            _ <- forkIO . keepUpdated lTor [sesh] $ fromIntegral updateFrequency
             (port, app) <- getApplicationDev lTor sesh
             runner <- selectRunner
             forkIO $ runner defaultSettings { settingsPort = port

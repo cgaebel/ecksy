@@ -1,1 +1,6 @@
 document.getElementById("#{aDomId}").innerHTML = "This text was added by the Javascript part of the homepage widget.";
+
+$(document).ready(function() {
+    $("#progressbar0").progressbar({ value: 80 });
+    $("#progressbar1").progressbar({ value: 100 });
+});

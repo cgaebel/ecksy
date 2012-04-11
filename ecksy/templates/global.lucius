@@ -36,6 +36,22 @@ body {
     margin-bottom: #{containerMargin};
 }
 
-.header-elem {
-    height: 120px;
+@headerHeight: 120px;
+
+.header-row {
+    height: #{headerHeight};
+}
+
+.header-row > .span4 {
+    height: #{headerHeight};
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-weight: bold;
+    font-size: 24px;
+    font-family: "Helvetica Neue";
 }

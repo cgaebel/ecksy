@@ -106,6 +106,8 @@ instance Yesod App where
             addScript     $ StaticR js_bootstrap_js
             $(widgetFile "global")
             addScript $ StaticR js_jquery_js
+            addScript $ StaticR js_jquery_ui_js
+            addStylesheet $ StaticR css_jquery_ui_css
             $(widgetFile "default-layout")
         hamletToRepHtml $(hamletFile "templates/default-layout-wrapper.hamlet")
 

@@ -1,19 +1,32 @@
-<div .row-fluid .header-elem>
-    <div .span4>
-        <a href=@{HomeR}>
-            <span .title><h1>#{title}
-    <div .span4>
+<div .row-fluid .header-row>
+    <div .span4 .header-left>
+        <img src="@{StaticR img_logo_png}" href=@{HomeR}>
+    <div .span4 .header-center>
         Search/Magnet shit goes here.
-    <div .span4>
+    <div .span4 .header-right>
         Config, etc.
 
-<table .table>
+<table .table .table-bordered .table-striped>
     <tr>
-        <td>(0, 0)
-        <td>(0, 1)
+        <td><b>Name
+        <td><b>Down
+        <td><b>Up
+        <td><b>Progress
+        <td><b>Time Remaining
     <tr>
-        <td>(1, 0)
-        <td>(1, 1)
+        <td>Mission Impossible 4
+        <td>1 mb/s
+        <td>200 kb/s
+        <td>
+            <div #progressbar0>
+        <td>2 hours
+    <tr>
+        <td>Community Season 1
+        <td>N/A
+        <td>10 kb/s
+        <td>
+            <div #progressbar1>
+        <td>Complete
 
 <ol>
   <li>Now that you have a working project you should use the #
