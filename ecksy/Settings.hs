@@ -5,7 +5,6 @@
 -- declared in the Foundation.hs file.
 module Settings
     ( widgetFile
-    , PersistConfig
     , staticRoot
     , staticDir
     , Extra (..)
@@ -15,15 +14,11 @@ module Settings
 import Prelude
 import Text.Shakespeare.Text (st)
 import Language.Haskell.TH.Syntax
-import Database.Persist.Sqlite (SqliteConf)
 import Yesod.Default.Config
 import qualified Yesod.Default.Util
 import Data.Text (Text)
 import Data.Yaml
 import Control.Applicative
-
--- | Which Persistent backend this site is using.
-type PersistConfig = SqliteConf
 
 -- Static setting below. Changing these requires a recompile
 
@@ -48,7 +43,6 @@ staticDir = "static"
 staticRoot :: AppConfig DefaultEnv x -> Text
 staticRoot conf = [st|#{appRoot conf}/static|]
 
-
 -- The rest of this file contains settings which rarely need changing by a
 -- user.
 
@@ -59,10 +53,10 @@ widgetFile = Yesod.Default.Util.widgetFileReload
 widgetFile = Yesod.Default.Util.widgetFileNoReload
 #endif
 
-data Extra = Extra
-    { extraAnalytics :: Maybe Text -- ^ Google Analytics
-    } deriving Show
+data Extra = Extra { extraPassword :: Text
+                   , extraAnalytics :: Maybe Text -- ^ Google Analytics
+                   } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
-parseExtra _ o = Extra
-    <$> o .:? "analytics"
+parseExtra _ o = Extra <$> o .:  "password"
+                       <*> o .:? "analytics"

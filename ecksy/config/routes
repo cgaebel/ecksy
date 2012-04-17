@@ -1,9 +1,10 @@
-/static StaticR Static getStatic
-/auth   AuthR   Auth   getAuth
+/static          StaticR Static  getStatic
+/favicon.ico     FaviconR        GET
+/robots.txt      RobotsR         GET
 
-/favicon.ico FaviconR GET
-/robots.txt RobotsR GET
-
-/ HomeR GET POST
-
+/                HomeR           GET
+/check-pw        CheckPassR      POST
+/config          ConfigR         GET POST
+/login           LoginR          GET
+/logout          LogoutR         GET
 /update-torrents UpdateTorrentsR GET

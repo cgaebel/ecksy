@@ -1,6 +1,27 @@
-document.getElementById("#{aDomId}").innerHTML = "This text was added by the Javascript part of the homepage widget.";
+// When the dom element tagged with 'domId' changes, 'onChange' will be called
+// with the new contents as a parameter.
+//
+// Example:
+//
+//  watchForChanges('#mytag', function(contents) {
+//      alert('textbox contains: ' + contents);
+//  });
+function watchForChanges(domId, onChange) {
+    var content = $(domId).val();
+
+    $(domId).keyup(function() {
+        if($(domId).val() != content) {
+            content = $(domId).val();
+            onChange(content);
+        }
+    });
+}
 
 $(document).ready(function() {
     $("#progressbar0").progressbar({ value: 80 });
-    $("#progressbar1").progressbar({ value: 100 });
+    //$("#progressbar1").progressbar({ value: 100 });
+
+    watchForChanges('#torrent-search', function() {
+        alert('Changed.');
+    });
 });

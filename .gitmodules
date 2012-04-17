@@ -1,0 +1,3 @@
+[submodule "ecksy/static/fonts/junction"]
+	path = ecksy/static/fonts/junction
+	url = git://github.com/theleagueof/junction.git

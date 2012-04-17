@@ -4,7 +4,7 @@ import Settings             (parseExtra)
 
 import Import
 
-import Application          (makeApplication, selectRunner)
+import Application          (makeApplication)
 
 import Yesod.Default.Config
 import Yesod.Logger (defaultDevelopmentLogger)
@@ -24,7 +24,7 @@ main = do r <- withLibTorrent $ \lt -> do
                config <- fromArgs parseExtra
                logger <- defaultDevelopmentLogger
                sesh <- makeSession lt
-               keepUpdated lt sesh $ fromIntegral updateFrequency
+               keepUpdated lt [ sesh ] $ fromIntegral updateFrequency
                app <- makeApplication lt sesh config logger
                print $ appHost config
                runner <- selectRunner

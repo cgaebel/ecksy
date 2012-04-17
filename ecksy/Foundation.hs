@@ -7,28 +7,19 @@ module Foundation
     , Handler
     , Widget
     , Form
-    , maybeAuth
-    , requireAuth
     , module Settings
-    , module Model
     ) where
 
 import Prelude
 import Yesod
 import Yesod.Static
-import Yesod.Auth
-import Yesod.Auth.BrowserId
-import Yesod.Auth.GoogleEmail
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Yesod.Logger (Logger, logMsg, formatLogText)
 import Network.HTTP.Conduit (Manager)
 import qualified Settings
-import qualified Database.Persist.Store
 import Settings.StaticFiles
-import Database.Persist.GenericSql
 import Settings (widgetFile, Extra (..))
-import Model
 import Text.Jasmine (minifym)
 import Web.ClientSession (getKey)
 import Text.Hamlet (hamletFile)
@@ -43,9 +34,7 @@ data App = App
     { settings :: AppConfig DefaultEnv Extra
     , getLogger :: Logger
     , getStatic :: Static -- ^ Settings for static file serving.
-    , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
-    , persistConfig :: Settings.PersistConfig
     , tor :: LTor
     , torSession :: Session
     }
@@ -102,12 +91,15 @@ instance Yesod App where
 
         pc <- widgetToPageContent $ do
             $(widgetFile "normalize")
-            addStylesheet $ StaticR css_bootstrap_css
-            addScript     $ StaticR js_bootstrap_js
-            $(widgetFile "global")
+
             addScript $ StaticR js_jquery_js
             addScript $ StaticR js_jquery_ui_js
             addStylesheet $ StaticR css_jquery_ui_css
+
+            addStylesheet $ StaticR css_bootstrap_css
+            addScript     $ StaticR js_bootstrap_js
+
+            $(widgetFile "global")
             $(widgetFile "default-layout")
         hamletToRepHtml $(hamletFile "templates/default-layout-wrapper.hamlet")
 
@@ -118,7 +110,7 @@ instance Yesod App where
     urlRenderOverride _ _ = Nothing
 
     -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR LoginR
+    --authRoute = undefined
 
     messageLogger y loc level msg =
       formatLogText (getLogger y) loc level msg >>= logMsg (getLogger y)
@@ -132,44 +124,7 @@ instance Yesod App where
     -- Place Javascript at bottom of the body tag so the rest of the page loads first
     jsLoader _ = BottomOfBody
 
--- How to run database actions.
-instance YesodPersist App where
-    type YesodPersistBackend App = SqlPersist
-    runDB f = do
-        master <- getYesod
-        Database.Persist.Store.runPool
-            (persistConfig master)
-            f
-            (connPool master)
-
-instance YesodAuth App where
-    type AuthId App = UserId
-
-    -- Where to send a user after successful login
-    loginDest _ = HomeR
-    -- Where to send a user after logout
-    logoutDest _ = HomeR
-
-    getAuthId creds = runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Just uid
-            Nothing -> do
-                fmap Just $ insert $ User (credsIdent creds) Nothing
-
-    -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId, authGoogleEmail]
-
-    authHttpManager = httpManager
-
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
-
--- Note: previous versions of the scaffolding included a deliver function to
--- send emails. Unfortunately, there are too many different options for us to
--- give a reasonable default. Instead, the information is available on the
--- wiki:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email

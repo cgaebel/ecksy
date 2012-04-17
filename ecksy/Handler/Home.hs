@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections, OverloadedStrings #-}
-module Handler.Home ( getHomeR, postHomeR ) where
+module Handler.Home ( getHomeR ) where
 
+import Auth
 import Import
 
 title :: Html
@@ -14,29 +15,6 @@ title = "Home"
 -- functions. You can spread them across multiple files if you are so
 -- inclined, or create a single monolithic file.
 getHomeR :: Handler RepHtml
-getHomeR = do
-    (formWidget, formEnctype) <- generateFormPost sampleForm
-    let submission = Nothing :: Maybe (FileInfo, Text)
-        handlerName = "getHomeR" :: Text
-    defaultLayout $ do
-        aDomId <- lift newIdent
-        setTitle title
-        $(widgetFile "homepage")
-
-postHomeR :: Handler RepHtml
-postHomeR = do
-    ((result, formWidget), formEnctype) <- runFormPost sampleForm
-    let handlerName = "postHomeR" :: Text
-        submission = case result of
-            FormSuccess res -> Just res
-            _ -> Nothing
-
-    defaultLayout $ do
-        aDomId <- lift newIdent
-        setTitle title
-        $(widgetFile "homepage")
-
-sampleForm :: Form (FileInfo, Text)
-sampleForm = renderDivs $ (,)
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField "What's on the file?" Nothing
+getHomeR = requireLogin . defaultLayout $ do
+    setTitle title
+    $(widgetFile "homepage")

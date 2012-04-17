@@ -1,4 +1,13 @@
-We have a few subdirectories of interest in here.
+STOP.
+
+Before you do anything, make sure to run:
+
+    $ git submodule init
+    $ git submodule update
+
+to check out all submodules.
+
+Ecksy has a few subdirectories of interest in here.
 
 1) libtorrent
       This is a trunk version of libtorrent. I update it semi-regularly. Make

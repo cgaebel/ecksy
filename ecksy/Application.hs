@@ -6,7 +6,6 @@ module Application
 
 import Import
 import Settings
-import Yesod.Auth
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
@@ -17,14 +16,15 @@ import Network.Wai.Middleware.RequestLogger (logCallbackDev)
 import Yesod.Logger (Logger, logBS, toProduction)
 import Network.Wai.Middleware.RequestLogger (logCallback)
 #endif
-import qualified Database.Persist.Store
-import Database.Persist.GenericSql (runMigration)
 import Network.HTTP.Conduit (newManager, def)
 
 import Torrent
 
 -- Import all relevant handler modules here.
+import Handler.Config
 import Handler.Home
+import Handler.Login
+import Handler.Logout
 import Handler.UpdateTorrents
 
 -- This line actually creates our YesodSite instance. It is the second half
@@ -52,14 +52,9 @@ makeApplication lTor sesh conf logger = do
 
 makeFoundation :: LTor -> Session -> AppConfig DefaultEnv Extra -> Logger -> IO App
 makeFoundation lTor sesh conf setLogger = do
-    manager <- newManager def
+    m <- newManager def
     s <- staticSite
-    dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
-              Database.Persist.Store.loadConfig >>=
-              Database.Persist.Store.applyEnv
-    p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
-    Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    return $ App conf setLogger s p manager dbconf lTor sesh
+    return $ App conf setLogger s m lTor sesh
 
 -- for yesod devel
 getApplicationDev :: LTor -> Session -> IO (Int, Application)

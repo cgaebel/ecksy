@@ -1,6 +1,7 @@
 Default: &defaults
   host: "*4"
   port: 3000
+  password: thisisanawesomeapplication
   #analytics: UA-YOURCODE
 
 Development:

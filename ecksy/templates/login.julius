@@ -1,0 +1,19 @@
+$(document).ready(function() {
+    $('#pw').focus();
+
+    $('#pw').change(function() {
+        $.ajax({ type: 'POST'
+               , url:  '@{CheckPassR}'
+               , data: { pw: $('#pw').val() }
+               , success: function() {
+                    $('#pw-control-group').removeClass("error")
+                            .addClass("success");
+                    window.location.replace('@{HomeR}');
+                 }
+               , error: function() {
+                    $('#pw-control-group').addClass("error")
+                    $('#pw').val('');
+                 }
+              });
+    });
+});

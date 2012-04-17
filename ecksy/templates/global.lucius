@@ -1,11 +1,24 @@
 @bgColor: #cccccc;
 @fontColor: #333333;
 
+@fontName: "Junction";
+
+/* Include the open-source 'junction' typeface. */
+@font-face {
+    font-family: #{fontName};
+    src: url("@{StaticR fonts_junction_webfonts_Junction_webfont_eot}");
+    src: local("☺"),
+      url("@{StaticR fonts_junction_webfonts_Junction_webfont_woff}") format("woff"),
+      url("@{StaticR fonts_junction_Junction_otf}") format("otf"),
+      url("@{StaticR fonts_junction_webfonts_Junction_webfont_svg}#Junction-webfont") format("svg");
+}
+
 body {
     color:             #{fontColor};
     background-color:  #{bgColor};
     background-image:  url(@{StaticR img_background_gradient_png});
     background-repeat: repeat-x;
+    font-family: #{fontName},"Lucida Grande","Lucida Sans Unicode",Helvetica,Verdana,sans-serif !important;
 }
 
 @containerBgColor: #ffffff;
@@ -16,8 +29,9 @@ body {
 
 .container,
 .container-fluid {
-    /* Drop shadow */
     background-color:      #{containerBgColor};
+
+    /* Drop shadow */
     -webkit-border-radius: #{containerBorderRadius};
     -moz-border-radius:    #{containerBorderRadius};
     border-radius:         #{containerBorderRadius};
@@ -44,6 +58,40 @@ body {
 
 .header-row > .span4 {
     height: #{headerHeight};
+    display: table;
+}
+
+.header-elem {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.hlink-black {
+    color: #000;
+    text-decoration: none;
+}
+
+.hlink-black:visited {
+    color: #000;
+    text-decoration: none;
+}
+
+.hlink-black:hover {
+    color: #000;
+    text-decoration: none;
+}
+
+.hlink-white {
+    color: #FFF;
+    text-decoration: none;
+}
+
+.hlink-white:visited {
+    color: #FFF;
+}
+
+.hlink-white:hover {
+    color: #FFF;
 }
 
 h1,
@@ -53,5 +101,10 @@ h4,
 h5 {
     font-weight: bold;
     font-size: 24px;
-    font-family: "Helvetica Neue";
+    font-family: "Lucida Grande","Lucida Sans Unicode",Helvetica,Arial,Verdana,sans-serif;
+}
+
+td,
+th {
+    vertical-align: middle !important;
 }
