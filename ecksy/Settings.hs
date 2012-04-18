@@ -5,6 +5,7 @@
 -- declared in the Foundation.hs file.
 module Settings
     ( widgetFile
+    , PersistConfig
     , staticRoot
     , staticDir
     , Extra (..)
@@ -14,11 +15,15 @@ module Settings
 import Prelude
 import Text.Shakespeare.Text (st)
 import Language.Haskell.TH.Syntax
+import Database.Persist.Sqlite (SqliteConf)
 import Yesod.Default.Config
 import qualified Yesod.Default.Util
 import Data.Text (Text)
 import Data.Yaml
 import Control.Applicative
+
+-- | Which Persistent backend this site is using.
+type PersistConfig = SqliteConf
 
 -- Static setting below. Changing these requires a recompile
 

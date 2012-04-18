@@ -2,9 +2,9 @@ $(document).ready(function() {
     $('#pw').focus();
 
     $('#pw').change(function() {
-        $.ajax({ type: 'POST'
-               , url:  '@{CheckPassR}'
-               , data: { pw: $('#pw').val() }
+        $.ajax({ type : 'POST'
+               , url  :  '@{CheckPassR}'
+               , data : { pw: $('#pw').val() }
                , success: function() {
                     $('#pw-control-group').removeClass("error")
                             .addClass("success");

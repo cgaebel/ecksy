@@ -8,6 +8,7 @@ module Foundation
     , Widget
     , Form
     , module Settings
+    , module Model
     ) where
 
 import Prelude
@@ -24,6 +25,10 @@ import Text.Jasmine (minifym)
 import Web.ClientSession (getKey)
 import Text.Hamlet (hamletFile)
 
+import Database.Persist.Store
+import Database.Persist.GenericSql
+
+import Model
 import Torrent
 
 -- | The site argument for your application. This can be a good place to
@@ -31,12 +36,15 @@ import Torrent
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { settings :: AppConfig DefaultEnv Extra
-    , getLogger :: Logger
-    , getStatic :: Static -- ^ Settings for static file serving.
-    , httpManager :: Manager
-    , tor :: LTor
-    , torSession :: Session
+    { settings      :: AppConfig DefaultEnv Extra
+    , getLogger     :: Logger
+    , getStatic     :: Static -- ^ Settings for static file serving.
+    , httpManager   :: Manager
+    , connPool      :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
+    , persistConfig :: Settings.PersistConfig
+
+    , tor           :: LTor
+    , torSession    :: Session
     }
 
 getTorSession :: App -> (LTor, Session)
@@ -92,6 +100,9 @@ instance Yesod App where
         pc <- widgetToPageContent $ do
             $(widgetFile "normalize")
 
+            -- Get droid sans.
+            addStylesheetRemote "http://fonts.googleapis.com/css?family=Droid+Sans:400,700"
+
             addScript $ StaticR js_jquery_js
             addScript $ StaticR js_jquery_ui_js
             addStylesheet $ StaticR css_jquery_ui_css
@@ -123,6 +134,16 @@ instance Yesod App where
 
     -- Place Javascript at bottom of the body tag so the rest of the page loads first
     jsLoader _ = BottomOfBody
+
+-- How to run database actions.
+instance YesodPersist App where
+    type YesodPersistBackend App = SqlPersist
+    runDB f = do
+        master <- getYesod
+        Database.Persist.Store.runPool
+            (persistConfig master)
+            f
+            (connPool master)
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

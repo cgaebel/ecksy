@@ -5,3 +5,5 @@ ecksy.sqlite3
 ecksy.production.sqlite3
 static/tmp
 config/cert
+config/client_session_key.aes
+downloads/

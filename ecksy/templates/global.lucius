@@ -1,24 +1,26 @@
 @bgColor: #cccccc;
 @fontColor: #333333;
 
-@fontName: "Junction";
+@fontName: "Droid Sans";
 
-/* Include the open-source 'junction' typeface. */
-@font-face {
-    font-family: #{fontName};
-    src: url("@{StaticR fonts_junction_webfonts_Junction_webfont_eot}");
-    src: local("☺"),
-      url("@{StaticR fonts_junction_webfonts_Junction_webfont_woff}") format("woff"),
-      url("@{StaticR fonts_junction_Junction_otf}") format("otf"),
-      url("@{StaticR fonts_junction_webfonts_Junction_webfont_svg}#Junction-webfont") format("svg");
+/* If any text lacks the new font, add its style to this list. */
+body,
+input,
+button,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color:       #{fontColor};
+    font-family: #{fontName}, sans-serif !important;
 }
 
 body {
-    color:             #{fontColor};
     background-color:  #{bgColor};
     background-image:  url(@{StaticR img_background_gradient_png});
     background-repeat: repeat-x;
-    font-family: #{fontName},"Lucida Grande","Lucida Sans Unicode",Helvetica,Verdana,sans-serif !important;
 }
 
 @containerBgColor: #ffffff;
@@ -101,10 +103,13 @@ h4,
 h5 {
     font-weight: bold;
     font-size: 24px;
-    font-family: "Lucida Grande","Lucida Sans Unicode",Helvetica,Arial,Verdana,sans-serif;
 }
 
 td,
 th {
     vertical-align: middle !important;
+}
+
+input {
+    text-align: center;
 }

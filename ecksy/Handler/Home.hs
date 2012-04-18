@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections, OverloadedStrings #-}
 module Handler.Home ( getHomeR ) where
 
-import Auth
+import Auth ( requireLogin )
 import Import
 
 title :: Html

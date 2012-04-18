@@ -3,17 +3,18 @@ module Init ( selectRunner
             , keepUpdated
             ) where
 
+import Control.Applicative
 import Control.Concurrent
+import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
 
-import Data.Attoparsec.ByteString as A
+import Data.Attoparsec.Text as A
 
-import Data.ByteString ( ByteString )
-import Data.Char
+import Data.Conduit.TMChan
 import Data.Maybe
-import Data.Text.Encoding ( decodeUtf8' )
-import Data.Word
+import Data.Text.Encoding ( decodeUtf8With )
+import Data.Text.Encoding.Error ( ignore )
 
 import Data.Conduit
 import qualified Data.Conduit.Binary as CB
@@ -65,19 +66,18 @@ pauseFor t | t < realToFrac (maxBound :: Int) / 1e6 = threadDelay $ floor (realT
 getBlocklist ::  LTor -> IO IPFilter
 getBlocklist lt = do f <- makeIPFilter lt
                      let blockRange = addFilteredRange lt f
-                     mapM_ (keepTryingToUpdateBlockList blockRange) blocklists
+                     mapM_ (repeatedly . updateBlockList blockRange) blocklists
                      return f
 
--- | Repeatedly tries to update the block list with a url it succeeds. This is
---   needed because the iblocklist servers are very finicky.
---
---   TODO: Logger!
-keepTryingToUpdateBlockList :: (Text -> Text -> IO ()) -> Text -> IO ()
-keepTryingToUpdateBlockList blockRange url = do r <- (E.try $ updateBlockList blockRange url) :: IO (Either E.SomeException ())
-                                                case r of
-                                                    Left err -> do flushOut $ "Blocklist update failed [ " ++ show err ++ " ]. Retrying..."
-                                                                   keepTryingToUpdateBlockList blockRange url
-                                                    Right () -> return ()
+-- | Keeps trying until no exception occurs. BEWARE: This could end in an infinite loop!
+repeatedly :: IO a -> IO a
+repeatedly x = do r <- try' x
+                  case r of
+                     Left  _  -> repeatedly x
+                     Right r' -> return r'
+
+try' :: IO a -> IO (Either E.SomeException a)
+try' = E.try
 
 -- | TODO: Update this to use stm-conduit. HTTP in one thread,
 --         gzip and parsing in the other.
@@ -85,42 +85,70 @@ updateBlockList :: (Text -> Text -> IO ()) -- ^ The "add range" function
                 -> Text -- ^ The url of the (possibly gzipped) p2p blocklist.
                 -> IO ()
 updateBlockList blockRange url = do req <- CH.parseUrl $ unpack url
-                                    CH.withManager $ \man -> do
-                                        CH.Response _ _ hdrs src <- CH.http req man
-                                        let unzipper = case isJust $ lookup "application/x-gzip" hdrs of
-                                                          True -> ungzip
-                                                          False -> CL.mapM (return . id)
-                                        src
-                                          $= unzipper
-                                          $= CB.lines
-                                          $$ CL.mapM_ (liftIO . blockRange' . parseLine)
+                                    chan <- atomically $ newTBMChan 256
+                                    _ <- forkIO . CH.withManager $ \man -> do
+                                            CH.Response _ _ hdrs src <- CH.http req man
+                                            let unzipper = case isJust $ lookup "application/x-gzip" hdrs of
+                                                              True  -> ungzip
+                                                              False -> CL.map id
+                                            src $= unzipper $$ sinkTBMChan chan
+
+                                    sourceTBMChan chan
+                                        $= CB.lines
+                                        $$ CL.mapM_ (liftIO . blockRange' . parseLine . decodeUtf8With ignore)
     where
         blockRange' :: Result (Text, Text) -> IO ()
-        blockRange' (A.Fail _ _ _)    = return ()
+        blockRange' (Fail _ _ _)      = return ()
         blockRange' (A.Done _ (x, y)) = blockRange x y
-        blockRange' (A.Partial f)     = blockRange' $ f ""
+        blockRange' (Partial f)       = blockRange' $ f ""
 
-char2word :: Char -> Word8
-char2word = fromIntegral . ord
-
--- | The format of a p2p file is:
---
---   identifier:0.0.0.0-255.255.255.255
-parseLine :: ByteString -> Result (Text, Text)
+parseLine :: Text -> Result (Text, Text)
 parseLine src = parse parser src
     where
         parser :: Parser (Text, Text)
-        parser = do skipWhile (/= char2word ':')
-                    _ <- word8 $ char2word ':'
-                    ip1 <- tryDecodeUtf8 =<< A.takeWhile (/= char2word '-')
-                    _ <- word8 $ char2word '-'
-                    ip2 <- tryDecodeUtf8 =<< takeByteString
-                    return (ip1, ip2)
+        parser = do skipWhile (/= ':')
+                    _ <- char ':'
+                    parseTwoIPs <|> parser
             where
-                tryDecodeUtf8 :: ByteString -> Parser Text
-                tryDecodeUtf8 bs = case decodeUtf8' bs of
-                                      Left _ -> fail "non-utf8 character found. dropping line."
-                                      Right t -> return t
+                parseTwoIPs :: Parser (Text, Text)
+                parseTwoIPs = do ip1 <- parseIPAddress
+                                 _ <- char '-'
+                                 ip2 <- parseIPAddress
+                                 return (ip1, ip2)
+
+        -- https://tools.ietf.org/id/draft-main-ipaddr-text-rep-01.txt
+        parseIPAddress :: Parser Text
+        parseIPAddress = do a <- d8
+                            _ <- char '.'
+                            b <- d8
+                            _ <- char '.'
+                            c <- d8
+                            _ <- char '.'
+                            d <- d8
+                            return $
+                              a `append` "." `append`
+                              b `append` "." `append`
+                              c `append` "." `append`
+                              d
+            where
+                d8 :: Parser Text
+                d8 =  do s25 <- string "25"
+                         d   <- digit
+                         return $ s25 `snoc` d
+                  <|> do s2 <- char '2'
+                         dx <- satisfy (\c -> c >= '0' &&  c <= '4')
+                         dy <- digit
+                         return $ pack [ s2, dx, dy ]
+                  <|> do s1 <- char '1'
+                         dx <- digit
+                         dy <- digit
+                         return $ pack [ s1, dx, dy ]
+                  <|> do s1 <- satisfy (\c -> c >= '1' && c <= '9')
+                         dx <- digit
+                         return $ pack [ s1, dx ]
+                  <|> do d <- digit
+                         return $ pack [ d ]
+        
 
 -- | Used to select the appropriate runner, depending on whether or not an SSL
 --   certificate is available.

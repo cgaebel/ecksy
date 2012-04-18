@@ -1,6 +1,7 @@
 {-# LANGUAGE TupleSections, OverloadedStrings #-}
 module Handler.UpdateTorrents where
 
+import Auth ( requireLogin )
 import Import
 import Torrent
 
@@ -14,5 +15,5 @@ import Data.Aeson
 -- functions. You can spread them across multiple files if you are so
 -- inclined, or create a single monolithic file.
 getUpdateTorrentsR :: Handler RepJson
-getUpdateTorrentsR = do (tl, ses) <- getTorSession <$> getYesod
-                        (RepJson . toContent . encode) <$> liftIO (getSessionSummary tl ses)
+getUpdateTorrentsR = requireLogin $ do (tl, ses) <- getTorSession <$> getYesod
+                                       (RepJson . toContent . encode) <$> liftIO (getSessionSummary tl ses)

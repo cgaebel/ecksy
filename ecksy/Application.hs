@@ -16,11 +16,14 @@ import Network.Wai.Middleware.RequestLogger (logCallbackDev)
 import Yesod.Logger (Logger, logBS, toProduction)
 import Network.Wai.Middleware.RequestLogger (logCallback)
 #endif
+import qualified Database.Persist.Store
+import Database.Persist.GenericSql ( runMigration, SqlPersist )
 import Network.HTTP.Conduit (newManager, def)
 
 import Torrent
 
 -- Import all relevant handler modules here.
+import Handler.AddMagnetLink
 import Handler.Config
 import Handler.Home
 import Handler.Login
@@ -52,9 +55,23 @@ makeApplication lTor sesh conf logger = do
 
 makeFoundation :: LTor -> Session -> AppConfig DefaultEnv Extra -> Logger -> IO App
 makeFoundation lTor sesh conf setLogger = do
-    m <- newManager def
-    s <- staticSite
-    return $ App conf setLogger s m lTor sesh
+        m <- newManager def
+        s <- staticSite
+        dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
+                Database.Persist.Store.loadConfig >>=
+                Database.Persist.Store.applyEnv
+        p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
+        Database.Persist.Store.runPool dbconf (runMigration migrateAll >> loadOldTorrents) p
+
+        return $ App conf setLogger s m p dbconf lTor sesh
+    where
+        loadOldTorrents :: SqlPersist IO ()
+        loadOldTorrents = do ts <- map entityVal <$> selectList [] [ Asc DownloadLinkInfoHash ]
+                             liftIO $ mapM_ (\(DownloadLink i m) -> queueForDownload i m) ts
+
+        queueForDownload :: InfoHash -> MagnetLink -> IO ()
+        queueForDownload ihash mlink = do _ <- addMagnetURI lTor sesh mlink $ downloadFolder <> "/" <> ihash <> "/"
+                                          return ()
 
 -- for yesod devel
 getApplicationDev :: LTor -> Session -> IO (Int, Application)

@@ -1,6 +1,4 @@
-<div .row>
-    <div .span4 .offset4 .login-box>
-        <form #pw-form action="#">
-            <div #pw-control-group .control-group>
-                <div .controls>
-                    <input type="password" #pw .input-large .control-group>
+<form #pw-form action="#">
+    <div #pw-control-group .control-group>
+        <div .controls>
+            <input type="password" placeholder="" #pw .input-large>

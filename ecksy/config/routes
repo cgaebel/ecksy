@@ -8,3 +8,4 @@
 /login           LoginR          GET
 /logout          LogoutR         GET
 /update-torrents UpdateTorrentsR GET
+/add-mlink       AddMagnetLinkR  POST

@@ -1,56 +1,58 @@
-<div .row-fluid .header-row>
-    <div .span4 .header-left>
-        <div .row-fluid .header-row>
-            <div .span8>
-                <img .header-elem src=@{StaticR img_logo_png} href=@{HomeR}>
-            <div .span4>
-                <table .header-elem>
-                    <tr>
-                        <td .up-down-arrow>
-                            <img width="24" height="24" src=@{StaticR img_download_arrow_svg}>
-                        <td #total-download-speed>4 mb/s
-                    <tr>
-                        <td .up-down-arow>
-                            <img width="24" height="24" src=@{StaticR img_upload_arrow_svg}>
-                        <td #total-upload-speed>100 kb/s
-    <div .span4 .header-center>
-        <form .header-elem .form-vertical .form-search>
-            <input .span4 #magnet-link-field type="text" placeholder="Paste Magnet Link Here">
-            <br>
-            <br>
-            <input .span4 .search-query #torrent-search type="text" placeholder="Search Torrents">
-    <div .span4 .header-right>
-        <a .hlink-black .btn .btn-large href=@{ConfigR}>
-            <i .icon-cog>
-            &nbsp;Configuration
-        &nbsp; &nbsp;
-        <a .hlink-white .btn .btn-large .btn-danger href=@{LogoutR}>
-            <i .icon-off>
-            &nbsp;Logout
+<div .container-fluid>
+    <div .row-fluid .header-row>
+        <div .span4 .header-left>
+            <div .row-fluid .header-row>
+                <div .span8>
+                    <img .header-elem src=@{StaticR img_logo_png} href=@{HomeR}>
+                <div .span4>
+                    <table .header-elem>
+                        <tr>
+                            <td .up-down-arrow>
+                                <img width="24" height="24" src=@{StaticR img_download_arrow_svg}>
+                            <td #total-download-speed>4 mb/s
+                        <tr>
+                            <td .up-down-arow>
+                                <img width="24" height="24" src=@{StaticR img_upload_arrow_svg}>
+                            <td #total-upload-speed>100 kb/s
+        <div .span4 .header-center>
+            <form .header-elem .form-vertical .form-search>
+                <div #magnet-link-control .control-group>
+                    <div .controls>
+                    <input .span4 #magnet-link-field type="text" placeholder="Paste Magnet Link Here">
+                <br>
+                <input .span4 .search-query #torrent-search type="text" placeholder="Search Torrents">
+        <div .span4 .header-right>
+            <a .hlink-black .btn .btn-large href=@{ConfigR}>
+                <i .icon-cog>
+                &nbsp;Configuration
+            &nbsp; &nbsp;
+            <a .hlink-white .btn .btn-large .btn-danger href=@{LogoutR}>
+                <i .icon-off>
+                &nbsp;Logout
 
-<div .row-fluid>
-    <table .table .table-bordered .table-striped #torrent-table>
-        <thead>
-            <tr>
-                <th><b>Name
-                <th><b>Down
-                <th><b>Up
-                <th><b>Progress
-                <th><b>Time Remaining
-        <tbody>
-            <tr>
-                <td>Mission Impossible 4
-                <td>1 mb/s
-                <td>200 kb/s
-                <td>
-                    <div #progressbar0>
-                <td>2 hours
-            <tr>
-                <td>Community Season 1
-                <td>N/A
-                <td>10 kb/s
-                <td>
-                    <div .download-btn>
-                        <button .btn .btn-success type="button">
-                            Download
-                <td>Complete
+    <div .row-fluid>
+        <table .table .table-bordered .table-striped #torrent-table>
+            <thead>
+                <tr>
+                    <th><b>Name
+                    <th><b>Down
+                    <th><b>Up
+                    <th><b>Progress
+                    <th><b>Time Remaining
+            <tbody>
+                <tr>
+                    <td>Mission Impossible 4
+                    <td>1 mb/s
+                    <td>200 kb/s
+                    <td>
+                        <div #progressbar0>
+                    <td>2 hours
+                <tr>
+                    <td>Community Season 1
+                    <td>N/A
+                    <td>10 kb/s
+                    <td>
+                        <div .download-btn>
+                            <button .btn .btn-success type="button">
+                                Download
+                    <td>Complete

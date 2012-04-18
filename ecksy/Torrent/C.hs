@@ -25,6 +25,7 @@ module Torrent.C ( IPFilter
                        , totalDownloaded
                        , moveStorage
                        , torrentState
+                       , toMagnetURI
 
                        , makeSession
                        , addMagnetURI
@@ -44,6 +45,7 @@ module Torrent.C ( IPFilter
                  ) where
 
 import Control.Applicative
+import Control.Concurrent ( forkIO )
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
@@ -61,6 +63,11 @@ import Foreign.ForeignPtr
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Ptr
+
+-- | Performs a free in a new thread, for maximum speed.
+asyncFree :: Ptr a -> IO ()
+asyncFree p = do _ <- forkIO $ free p
+                 return ()
 
 data IPFilter_
 newtype IPFilter = IPF (ForeignPtr IPFilter_)
@@ -93,6 +100,7 @@ data LTor = LTor { makeIPFilter :: IO IPFilter
                  , totalDownloaded :: Torrent -> IO Integer
                  , moveStorage :: Torrent -> Text -> IO ()
                  , torrentState :: Torrent -> IO TorrentState
+                 , toMagnetURI :: Torrent -> IO Text
 
                  , makeSession :: IO Session
                  , addMagnetURI :: Session -> Text -> Text -> IO Torrent
@@ -163,8 +171,8 @@ foreign import ccall "dynamic"
 adaptTorrentSavePath :: TorrentSavePath -> (Torrent -> IO Text)
 adaptTorrentSavePath f (TOR fp) = withForeignPtr fp $ \p -> do
                                   cstr <- nullCheck <$> f p
-                                  str <- peekCString =<< f p
-                                  free cstr
+                                  str <- peekCString cstr
+                                  asyncFree cstr
                                   return $ pack str
 
 type TorrentName = TorrentSavePath
@@ -392,6 +400,7 @@ withLibTorrent f = withDL "liblibtorrent-c.so" [ RTLD_LAZY ] $ \dl -> runErrorT 
                     f_th    <- getFreeFunc dl "free_torrent_handle"
                     f_ses   <- getFreeFunc dl "free_session"
 
+                    -- If functions have the same params/return value, we might reuse their adapters/makers. Don't be scared.
                     liftIO . f =<< LTor <$> (adaptMakeIPFilter f_ipf . mkMakeIPFilter     <$> getFunc dl "make_ip_filter")
                                         <*> (adaptAddFilteredRange   . mkAddFilteredRange <$> getFunc dl "add_filtered_range")
 
@@ -414,6 +423,7 @@ withLibTorrent f = withDL "liblibtorrent-c.so" [ RTLD_LAZY ] $ \dl -> runErrorT 
                                         <*> (adaptTorrentTotalSize   . mkTorrentTotalSize <$> getFunc dl "total_downloaded")
                                         <*> (adaptMoveStorage        . mkMoveStorage      <$> getFunc dl "move_storage")
                                         <*> (adaptTorrentState       . mkTorrentState     <$> getFunc dl "torrent_state")
+                                        <*> (adaptInfoHash           . mkInfoHash         <$> getFunc dl "torrent_magnet_uri")
 
                                         <*> (adaptMakeSession f_ses  . mkMakeSession      <$> getFunc dl "make_session")
                                         <*> (adaptAddMagnetURI f_th  . mkAddMagnetURI     <$> getFunc dl "add_magnet_uri")

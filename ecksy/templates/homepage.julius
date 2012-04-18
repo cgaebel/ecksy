@@ -1,25 +1,115 @@
-// When the dom element tagged with 'domId' changes, 'onChange' will be called
-// with the new contents as a parameter.
-//
-// Example:
-//
-//  watchForChanges('#mytag', function(contents) {
-//      alert('textbox contains: ' + contents);
-//  });
-function watchForChanges(domId, onChange) {
-    var content = $(domId).val();
-
-    $(domId).keyup(function() {
-        if($(domId).val() != content) {
-            content = $(domId).val();
-            onChange(content);
-        }
-    });
-}
-
 $(document).ready(function() {
+    // temporary placeholders
     $("#progressbar0").progressbar({ value: 80 });
-    //$("#progressbar1").progressbar({ value: 100 });
+
+    // isInfixOf :: String -> String -> Bool
+    function isPrefixOf(start, str) {
+        return str.slice(0, start.length) == start;
+    }
+
+    // Integer -> String
+
+    // returns the rate, as a nicer value.
+    // r <= 1024            -> r        + " b/s"
+    // 1024 < r <= 1024^2   -> r/1024   + " kb/s"
+    // 1024^2 < r <= 1024^3 -> r/1024^2 + " mb/s"
+    // 1024^3 < r <= 1024^4 -> r/1024^3 + " gb/s"
+    function prettyPrintRate(inBytesPerSecond) {
+        var r = inBytesPerSecond;
+
+        if (r <= Math.pow(2, 10)) {
+            return r.toFixed() + " b/s";
+        } else if(r <= Math.pow(2, 20)) {
+            return (r/Math.pow(2, 10)).toFixed(0) + " kb/s";
+        } else if(r <= Math.pow(2, 30)) {
+            return (r/Math.pow(2, 20)).toFixed(1) + " mb/s";
+        } else {
+            return (r/Math.pow(2, 30)).toFixed(2) + " gb/s";
+        }
+    }
+
+    // default filter: no filtering!
+    var torrentFilter = function(torrentList) { return torrentList; };
+    var unfilteredTorrentList = [];
+
+    // 1) updates speeds
+    // 2) clears the existing list of torrents
+    // 3) sets unfilteredTorrentList to its recieved torrent list.
+    // 4) renders the filtered torrents
+    //
+    // Input JSON format:
+    //
+    //    Name :: String 
+    //    SavePath :: String
+    //    State :: OneOf [ QueuedForChecking
+    //                   , Checking
+    //                   , DownloadingMetadata
+    //                   , Downloading
+    //                   , Finished
+    //                   , Seeding
+    //                   , Allocating
+    //                   , CheckingResumeData
+    //                   ]
+    //    DownloadRate :: Int (in bytes)
+    //    UploadRate :: Int (in bytes)
+    //    UploadLimit :: Int (in bytes)
+    //    DownloadLimit :: Int (in bytes)
+    //    TotalSize :: Int (in bytes)
+    //    TotalDownloaded :: Int (in bytes)
+    //    Progress :: Float (range: [0, 1])
+    //    Paused :: [True | False]
+    //    InfoHash :: String
+    function updateTorrentList(recvdJson) {
+    }
+
+    (function updater() {
+        $.ajax({ url     : '@{UpdateTorrentsR}'
+               , type    : 'GET'
+               , success : function(data) {
+                    updateTorrentList(data["Torrents"]);
+                    setTimeout(updater, 1000);
+                 }
+               , error   : function() {
+                    setTimeout(updater, 2000);
+                 }
+               });
+    })();
+
+    // When the dom element tagged with 'domId' changes, 'onChange' will be called
+    // with the new contents as a parameter.
+    //
+    // Example:
+    //
+    //  watchForChanges('#mytag', function(contents) {
+    //      alert('textbox contains: ' + contents);
+    //  });
+    function watchForChanges(domId, onChange) {
+        var content = $(domId).val();
+
+        $(domId).keyup(function() {
+            if($(domId).val() !== content) {
+                content = $(domId).val();
+                onChange(content);
+            }
+        });
+    }
+
+    watchForChanges('#magnet-link-field', function() {
+        var mlink = $('#magnet-link-field').val();
+
+        if(isPrefixOf("magnet:?xt=urn:btih:", mlink) === false) {
+            $('#magnet-link-control').addClass('error');
+            return;
+        }
+
+        $.ajax({ type : 'POST'
+               , url  : '@{AddMagnetLinkR}'
+               , data : { link : mlink }
+               });
+
+        $('#magnet-link-control').addClass('success');
+        $('#magnet-link-field').val('');
+    });
 
     watchForChanges('#torrent-search', function() {
         alert('Changed.');

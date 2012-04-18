@@ -25,7 +25,7 @@
 
 extern "C" {
 
-#define WRAP(stuff) try { stuff; } catch(const libtorrent::libtorrent_exception& e) { printf("!!! Libtorrent error :%i: %s\n", __LINE__, e.what()); } \
+#define WRAP(stuff) try { stuff; } catch(const std::exception& e) { printf("!!! Libtorrent error :%i: %s\n", __LINE__, e.what()); } \
                                    catch(...) { assert(0); }
 
 // BEGIN ip_filter //
@@ -41,11 +41,14 @@ void free_ip_filter(struct ip_filter* f) { delete f; }
 
 void add_filtered_range(struct ip_filter* f, const char* start, const char* end)
 {
-    WRAP(
+    try {
         f->f.add_rule(libtorrent::address::from_string(start),
                       libtorrent::address::from_string(end),
                       libtorrent::ip_filter::blocked);
-    )
+    } catch(const std::exception& e) {
+        printf("[!!] Libtorrent ip-range error [%s - %s]: %s.\n", start, end, e.what());
+        fflush(stdout);
+    }
 }
 
 // END ip_filter //
@@ -86,9 +89,13 @@ struct torrent_handle
 
 static char* str2str(const std::string& s)
 {
-    size_t len = s.length();
+    size_t len = s.length() + 1;
     char* r = (char*)malloc(len);
     memcpy(r, s.c_str(), len);
+
+    // just in case...
+    if(len > 0) r[len-1] = '\0';
+
     return r;
 }
 
@@ -177,15 +184,31 @@ bool is_seed(const struct torrent_handle* h)
     return false;
 }
 
+// Turns a byte into a string, with the result being written (two characters
+// and a NULL-terminator) into dst.
+static void stringify_byte(unsigned char b, char* dst)
+{
+    static const char hex[] = "0123456789abcdef";
+
+    dst[0] = hex[(b & 0xF0) >> 4];
+    dst[1] = hex[b & 0x0F];
+    dst[2] = '\0';
+}
+
 char* info_hash(const struct torrent_handle* h)
 {
     assert(h);
 
     WRAP(
-        auto s = h->h.info_hash().to_string();
-        size_t n = s.length() + 1;
-        char* p = (char*)malloc(n);
-        memcpy((char*)p, s.c_str(), n);
+        // a 20 byte "array" of bytes.
+        libtorrent::sha1_hash hash = h->h.info_hash();
+        size_t n = libtorrent::sha1_hash::size;
+
+        char* p = (char*)malloc(n*2+1);
+
+        for(int i = 0; i < n; ++i)
+            stringify_byte(hash[i], p + i*2);
+
         return p;
     )
 
@@ -255,8 +278,19 @@ int torrent_state(const struct torrent_handle* h)
 {
     assert(h);
 
-    WRAP(h->h.status().state);
+    WRAP(return h->h.status().state);
     return -1;
+}
+
+char* torrent_magnet_uri(const struct torrent_handle* h)
+{
+    assert(h);
+
+    WRAP(
+        return str2str(libtorrent::make_magnet_uri(h->h));
+    );
+
+    return NULL;
 }
 
 void free_torrent_handle(struct torrent_handle* h)
