@@ -36,6 +36,7 @@ library
                      Handler.Home
                      Handler.Login
                      Handler.Logout
+                     Handler.RenameTorrent
                      Handler.UpdateTorrents
                      Import
                      Model
@@ -125,3 +126,4 @@ executable         ecksy
                  , regex-compat         == 0.95.*
                  , stm-conduit          == 0.4.*
                  , stm                  == 2.3.*
+                 , unordered-containers == 0.2.*

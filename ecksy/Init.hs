@@ -125,11 +125,7 @@ parseLine src = parse parser src
                             c <- d8
                             _ <- char '.'
                             d <- d8
-                            return $
-                              a `append` "." `append`
-                              b `append` "." `append`
-                              c `append` "." `append`
-                              d
+                            return $ a ++ "." ++ b ++ "." ++ c ++ "." ++ d
             where
                 d8 :: Parser Text
                 d8 =  do s25 <- string "25"

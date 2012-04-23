@@ -20,6 +20,8 @@ import qualified Database.Persist.Store
 import Database.Persist.GenericSql ( runMigration, SqlPersist )
 import Network.HTTP.Conduit (newManager, def)
 
+import Control.Concurrent
+
 import Torrent
 
 -- Import all relevant handler modules here.
@@ -28,6 +30,7 @@ import Handler.Config
 import Handler.Home
 import Handler.Login
 import Handler.Logout
+import Handler.RenameTorrent
 import Handler.UpdateTorrents
 
 -- This line actually creates our YesodSite instance. It is the second half
@@ -67,11 +70,15 @@ makeFoundation lTor sesh conf setLogger = do
     where
         loadOldTorrents :: SqlPersist IO ()
         loadOldTorrents = do ts <- map entityVal <$> selectList [] [ Asc DownloadLinkInfoHash ]
-                             liftIO $ mapM_ (\(DownloadLink i m) -> queueForDownload i m) ts
+                             _ <- liftIO . forkIO $ mapM_ (\(DownloadLink i n m) -> queueForDownload i n m) ts
+                             return ()
 
-        queueForDownload :: InfoHash -> MagnetLink -> IO ()
-        queueForDownload ihash mlink = do _ <- addMagnetURI lTor sesh mlink $ downloadFolder <> "/" <> ihash <> "/"
-                                          return ()
+        queueForDownload :: InfoHash -> DisplayName -> MagnetLink -> IO (Maybe Torrent)
+        queueForDownload ihash dn mlink = do t <- addMagnetURI lTor sesh mlink $ downloadFolder ++ "/" ++ ihash ++ "/"
+                                             case t of
+                                                 Just t' -> do setTorrentName lTor t' dn
+                                                               return t
+                                                 Nothing -> return t
 
 -- for yesod devel
 getApplicationDev :: LTor -> Session -> IO (Int, Application)

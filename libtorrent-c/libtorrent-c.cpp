@@ -327,21 +327,19 @@ struct session* make_session()
     // TODO: Should we force encryption? Test speeds with and without.
     p_settings.out_enc_policy    = libtorrent::pe_settings::enabled;
     p_settings.in_enc_policy     = libtorrent::pe_settings::enabled;
-    p_settings.allowed_enc_level = libtorrent::pe_settings::rc4;
+    p_settings.allowed_enc_level = libtorrent::pe_settings::both;
     p_settings.prefer_rc4        = true;
 
     s->s.set_pe_settings(p_settings);
 
     // since we're going to be all embedded and shit...
-    libtorrent::session_settings s_settings = libtorrent::min_memory_usage();
+    libtorrent::session_settings s_settings = libtorrent::high_performance_seed();
 
     s_settings.user_agent = "Ecksy/1.0 libtorrent/" LIBTORRENT_VERSION;
     s_settings.file_pool_size = 512; // limit on linux is 1024, but we need some for the web server.
     s_settings.ignore_limits_on_local_network = true;
     s_settings.lazy_bitfields = true;
     s_settings.use_parole_mode = true;
-    s_settings.active_downloads = -1;
-    s_settings.active_seeds = 4;
     s_settings.dont_count_slow_torrents = true;
     s_settings.share_ratio_limit = 2;
     s_settings.peer_turnover_interval = 60;

@@ -7,13 +7,16 @@ import Torrent
 postAddMagnetLinkR :: Handler RepJson
 postAddMagnetLinkR = requireLogin $ do mlink <- runInputPost $ ireq textField "link"
 
-                                       ihash <- case magnetInfoHash mlink of
-                                                   Nothing -> invalidArgs [ "link" ]
-                                                   Just h  -> return h
+                                       case parseMagnetLink mlink of
+                                           Just ((ihash, Just dn, _)) -> go mlink ihash dn
+                                           _                          -> invalidArgs [ "link" ]
+    where
+        go :: Text -> Text -> Text -> Handler RepJson
+        go mlink ihash dn = do _ <- runDB . insertUnique $ DownloadLink ihash dn mlink
 
-                                       _ <- runDB . insertUnique $ DownloadLink ihash mlink
-
-                                       (tl, ses) <- getTorSession <$> getYesod
-                                       _ <- liftIO . addMagnetURI tl ses mlink $ downloadFolder <> "/" <> ihash <> "/"
-
-                                       sendResponse $ RepJson emptyContent
+                               (tl, ses) <- getTorSession <$> getYesod
+                               t <- liftIO . addMagnetURI tl ses mlink $ downloadFolder ++ "/" ++ ihash ++ "/"
+                               case t of
+                                  Just t' -> do liftIO $ setTorrentName tl t' dn
+                                                sendResponse $ RepJson emptyContent
+                                  Nothing -> invalidArgs [ "link" ]

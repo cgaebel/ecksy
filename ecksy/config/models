@@ -1,5 +1,6 @@
 -- The raw magnet links for everything we've downloaded/are downloading.
 DownloadLink
     infoHash   Text
+    name       Text
     link       Text
     UniqueHash infoHash

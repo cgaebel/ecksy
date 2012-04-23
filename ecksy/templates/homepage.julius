@@ -1,10 +1,68 @@
 $(document).ready(function() {
-    // temporary placeholders
-    $("#progressbar0").progressbar({ value: 80 });
+    // add sum, min, and max to the array prototype. ruthlessly stolen from:
+    // http://snippets.dzone.com/posts/show/769
+    Array.prototype.sum = function(){
+        for(var i=0,sum=0;i<this.length;sum+=this[i++]);
+        return sum;
+    }
+    Array.prototype.max = function(){
+        return Math.max.apply({},this);
+    }
+    Array.prototype.min = function(){
+        return Math.min.apply({},this);
+    }
 
-    // isInfixOf :: String -> String -> Bool
+    function toArray(e) {
+        return Array.prototype.slice.call(e);
+    }
+
+    Function.prototype.curry = function() {
+        if (arguments.length<1) {
+            return this; //nothing to curry with - return function
+        }
+        var __method = this;
+        var args = toArray(arguments);
+        return function() {
+            return __method.apply(this, args.concat(toArray(arguments)));
+        };
+    }
+
+    // get the vendor-prefixed hidden and visibilityHidden strings.
+    var vHidden = typeof document.hidden       != 'undefined' ? function() { return document.hidden; }
+                : typeof document.msHidden     != 'undefined' ? function() { return document.msHidden; }
+                : typeof document.webkitHidden != 'undefined' ? function() { return document.webkitHidden; }
+                : typeof document.mozHidden    != 'undefined' ? function() { return document.mozHidden; }
+                : null;
+
+    var vVisibilityChange = typeof document.hidden       != 'undefined' ? 'visibilitychange'
+                          : typeof document.msHidden     != 'undefined' ? 'msvisibilitychange'
+                          : typeof document.webkitHidden != 'undefined' ? 'webkitvisibilitychange'
+                          : typeof document.mozHidden    != 'undefined' ? 'mozvisibilitychange'
+                          : null;
+
+    // isPrefixOf :: String -> String -> Bool
     function isPrefixOf(start, str) {
         return str.slice(0, start.length) == start;
+    }
+
+    // pollFunc takes a continuation (canonically known as 'k'), which should be
+    // called after whatever asynchronous action it performs.
+    //
+    // I wish I had a continuation monad. =(
+    function pollServer(delay, pollFunc) {
+        var thisFunc = pollServer.curry(delay, pollFunc);
+        var tryAgain = pollFunc.curry(function() { setTimeout(thisFunc, delay); });
+
+        if(vHidden()) {
+            var onChange = function() {
+               document.removeEventListener(vVisibilityChange, onChange);
+               tryAgain();
+            };
+
+            document.addEventListener(vVisibilityChange, onChange);
+        } else {
+            tryAgain();
+        }
     }
 
     // Integer -> String
@@ -17,15 +75,44 @@ $(document).ready(function() {
     function prettyPrintRate(inBytesPerSecond) {
         var r = inBytesPerSecond;
 
-        if (r <= Math.pow(2, 10)) {
-            return r.toFixed() + " b/s";
-        } else if(r <= Math.pow(2, 20)) {
-            return (r/Math.pow(2, 10)).toFixed(0) + " kb/s";
-        } else if(r <= Math.pow(2, 30)) {
-            return (r/Math.pow(2, 20)).toFixed(1) + " mb/s";
-        } else {
-            return (r/Math.pow(2, 30)).toFixed(2) + " gb/s";
+        return r <= Math.pow(2, 10) ? r.toFixed() + " b/s"
+             : r <= Math.pow(2, 20) ? (r/Math.pow(2, 10)).toFixed(0) + " kb/s"
+             : r <= Math.pow(2, 30) ? (r/Math.pow(2, 20)).toFixed(0) + " mb/s"
+             : (r/Math.pow(2, 30)).toFixed(2) + " gb/s";
+    }
+
+    // prints the time "left" for a quantity, given the amount left
+    // and the current quantity/second of its progress.
+    function prettyPrintTime(amountLeft, rate) {
+        var q = amountLeft;
+        var r = rate;
+
+        if(r === 0) {
+            return "stalled";
         }
+
+        var t = q/r;
+
+        return t < 2            ? "a second"
+             : t < 60           ? t.toFixed(0) + " seconds"
+             : t < 2*60         ? "a minute"
+             : t < 60*60        ? (t/60).toFixed(0) + " minutes"
+             : t < 2*60*60      ? "an hour"
+             : t < 24*60*60     ? (t/(60*60)).toFixed(0) + " hours"
+             : t < 4*24*60*60   ? "a few days"
+             : t < 7*24*60*60   ? "less than a week"
+             : t < 365*24*60*60 ? "a long time"
+             : "stalled";
+    }
+
+    // Returns 's' wrapped in the given HTML tag.
+    // > inTag("td", "x") 
+    // >>> <td>x</td>
+    function inTag(tagName, s) {
+        return [ "<", tagName, ">"
+               , s
+               , "</", tagName.split(" ", 1)[0], ">"
+               ].join("");
     }
 
     // default filter: no filtering!
@@ -60,20 +147,69 @@ $(document).ready(function() {
     //    Paused :: [True | False]
     //    InfoHash :: String
     function updateTorrentList(recvdJson) {
+
+        function estimateTimeLeft(torrent) {
+            return prettyPrintTime(torrent.TotalSize - torrent.TotalDownloaded,
+                                   torrent.DownloadRate);
+        }
+
+        // Oh, how I wish I had monads and laziness. This would probably be
+        // significantly less wasteful.
+        function buildRow(torrent, idx) {
+            return inTag("tr",
+                     [ inTag("td", torrent.Name)
+                     , inTag("td", prettyPrintRate(torrent.DownloadRate))
+                     , inTag("td", prettyPrintRate(torrent.UploadRate))
+                     // TODO: Download button when complete, spinning progress bar
+                     //       when doing anything except downloading.
+                     , inTag("td",
+                         inTag('div id="progressbar-' + idx + '"', ""))
+                     , inTag("td",
+                         torrent.State.Downloading         ? estimateTimeLeft(torrent)
+                       : torrent.State.QueuedForChecking   ? "Queued"
+                       : torrent.State.Checking            ? "Checking..."
+                       : torrent.State.DownloadingMetadata ? "Downloading Metadata"
+                       : torrent.State.Finished            ? "Complete"
+                       : torrent.State.Seeding             ? "Complete"
+                       : torrent.State.Allocating          ? "Queued"
+                       : torrent.State.CheckingResumeData  ? "Checking..."
+                       : "*** unknown ***")
+                     ].join(""));
+        }
+
+        function getProgress(torrent) {
+            // the bar _seems_ to move faster when we use a fast power.
+            // http://chrisharrison.net/projects/progressbars/ProgBarHarrison.pdf
+            return Math.pow(torrent.Progress, 3);
+        }
+
+        $('#torrent-table-body').replaceWith(
+            inTag('tbody id="torrent-table-body"',
+                recvdJson.map(buildRow)));
+
+        for(var i = 0; i < recvdJson.length; i++)
+            $('#progressbar-' + i).progressbar({ value: 100*getProgress(recvdJson[i]) });
     }
 
-    (function updater() {
+    function updateSpeeds(totalDown, totalUp) {
+        $('#total-download-speed').html(prettyPrintRate(totalDown));
+        $('#total-upload-speed').html(prettyPrintRate(totalUp));
+    }
+
+    pollServer(1000, function(k) {
         $.ajax({ url     : '@{UpdateTorrentsR}'
                , type    : 'GET'
                , success : function(data) {
                     updateTorrentList(data["Torrents"]);
-                    setTimeout(updater, 1000);
-                 }
-               , error   : function() {
-                    setTimeout(updater, 2000);
-                 }
+                    updateSpeeds(data["Torrents"].map(function(t) { return t["DownloadRate"]; })
+                                                 .sum(),
+                                 data["Torrents"].map(function(t) { return t["UploadRate"]; })
+                                                 .sum()
+                                );
+               }
+               , complete: k
                });
-    })();
+    });
 
     // When the dom element tagged with 'domId' changes, 'onChange' will be called
     // with the new contents as a parameter.
@@ -98,16 +234,25 @@ $(document).ready(function() {
         var mlink = $('#magnet-link-field').val();
 
         if(isPrefixOf("magnet:?xt=urn:btih:", mlink) === false) {
-            $('#magnet-link-control').addClass('error');
+            console.log("invalid magnet link: " + mlink);
             return;
         }
 
         $.ajax({ type : 'POST'
                , url  : '@{AddMagnetLinkR}'
                , data : { link : mlink }
+               , success: function() {
+                    $('#magnet-link-control').removeClass('error')
+                                             .addClass('success');
+                    setTimeout(function() { $('#magnet-link-control').removeClass('error success'); }, 500);
+                 }
+               , error: function() {
+                    $('#magnet-link-control').removeClass('success')
+                                             .addClass('error');
+                    setTimeout(function() { $('#magnet-link-control').removeClass('error success'); }, 500);
+                 }
                });
 
-        $('#magnet-link-control').addClass('success');
         $('#magnet-link-field').val('');
     });
 

@@ -9,11 +9,11 @@
                         <tr>
                             <td .up-down-arrow>
                                 <img width="24" height="24" src=@{StaticR img_download_arrow_svg}>
-                            <td #total-download-speed>4 mb/s
+                            <td #total-download-speed>0 b/s
                         <tr>
                             <td .up-down-arow>
                                 <img width="24" height="24" src=@{StaticR img_upload_arrow_svg}>
-                            <td #total-upload-speed>100 kb/s
+                            <td #total-upload-speed>0 b/s
         <div .span4 .header-center>
             <form .header-elem .form-vertical .form-search>
                 <div #magnet-link-control .control-group>
@@ -31,7 +31,7 @@
                 &nbsp;Logout
 
     <div .row-fluid>
-        <table .table .table-bordered .table-striped #torrent-table>
+        <table .table .table-bordered .table-striped>
             <thead>
                 <tr>
                     <th><b>Name
@@ -39,20 +39,4 @@
                     <th><b>Up
                     <th><b>Progress
                     <th><b>Time Remaining
-            <tbody>
-                <tr>
-                    <td>Mission Impossible 4
-                    <td>1 mb/s
-                    <td>200 kb/s
-                    <td>
-                        <div #progressbar0>
-                    <td>2 hours
-                <tr>
-                    <td>Community Season 1
-                    <td>N/A
-                    <td>10 kb/s
-                    <td>
-                        <div .download-btn>
-                            <button .btn .btn-success type="button">
-                                Download
-                    <td>Complete
+            <tbody #torrent-table-body>
