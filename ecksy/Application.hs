@@ -11,6 +11,7 @@ import Yesod.Default.Main
 import Yesod.Default.Handlers
 #if DEVELOPMENT
 import Yesod.Logger (Logger, logBS)
+import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.RequestLogger (logCallbackDev)
 #else
 import Yesod.Logger (Logger, logBS, toProduction)
@@ -18,7 +19,7 @@ import Network.Wai.Middleware.RequestLogger (logCallback)
 #endif
 import qualified Database.Persist.Store
 import Database.Persist.GenericSql ( runMigration, SqlPersist )
-import Network.HTTP.Conduit (newManager, def)
+import Network.HTTP.Conduit (newManager)
 
 import Control.Concurrent
 
@@ -46,7 +47,7 @@ makeApplication :: LTor -> Session -> AppConfig DefaultEnv Extra -> Logger -> IO
 makeApplication lTor sesh conf logger = do
     foundation <- makeFoundation lTor sesh conf setLogger
     app <- toWaiAppPlain foundation
-    return $ logWare app
+    return . gzip def $ logWare app
   where
 #ifdef DEVELOPMENT
     logWare = logCallbackDev (logBS setLogger)
