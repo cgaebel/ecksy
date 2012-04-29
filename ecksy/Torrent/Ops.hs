@@ -10,6 +10,11 @@ import Prelude ( Int
                , Double
                , Bool
                , IO
+               , Show
+               , putStrLn
+               , (++)
+               , ($)
+               , (.)
                )
 
 import Control.Applicative
@@ -33,6 +38,7 @@ data TorrentSummary = TSummary { torName :: Text
                                , torPaused :: Bool
                                , torInfoHash :: Text
                                }
+    deriving Show
 
 $(deriveJSON (L.drop 3) ''TorrentSummary)
 
@@ -41,6 +47,7 @@ data SessionSummary = SSummary { sesPaused :: Bool
                                , sesDownloadLimit :: Int
                                , sesTorrents :: [TorrentSummary]
                                }
+    deriving Show
 
 $(deriveJSON (L.drop 3) ''SessionSummary)
 

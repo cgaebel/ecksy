@@ -51,7 +51,6 @@ import Control.Concurrent.STM
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.Error
 import Control.Monad.Trans.Maybe
 
@@ -88,7 +87,7 @@ data Torrent = TOR (ForeignPtr Torrent_)
 
 data Session_
 data Session = SES (ForeignPtr Session_)
-                   (TVar (HashMap InfoHash Text))
+                   (TVar (HashMap InfoHash (TVar Text)))
 
 data LTor = LTor { makeIPFilter :: IO IPFilter
                  , addFilteredRange :: IPFilter -> Text -> Text -> IO ()
@@ -297,9 +296,9 @@ adaptAddMagnetURI freeFunc f (SES s' m) uri' tgt' = withForeignPtr s' $ \s ->
                                                      case parseMagnetLink uri' of
                                                         Just (ihash, mname, _) -> withText tgt' $ \tgt -> do
                                                                                   t <- newForeignPtr freeFunc =<< nullCheck <$> f s uri tgt
-                                                                                  name <- atomically $ do let mname' = fromMaybe "" mname
-                                                                                                          modifyTVar' m $ M.insert ihash mname'
-                                                                                                          newTVar mname'
+                                                                                  name <- atomically $ do r <- newTVar $ fromMaybe "" mname
+                                                                                                          modifyTVar' m $ M.insert ihash r
+                                                                                                          return r
                                                                                   return . Just $ TOR t name
                                                         Nothing -> return Nothing
 
@@ -344,7 +343,7 @@ adaptFindTorrent freeFunc f (SES s' m) h' = withForeignPtr s' $ \s ->
                                              tp <- getRet =<< liftIO (f s h)
                                              mapMaybeT atomically $ do
                                                 name <- MaybeT $ M.lookup h' <$> readTVar m
-                                                TOR tp <$> lift (newTVar name)
+                                                return $ TOR tp name
     where
         getRet p | p == nullPtr = mzero
                  | otherwise   = liftIO $ newForeignPtr freeFunc p
@@ -381,17 +380,22 @@ adaptGetTorrents :: DL
                  -> (Torrent -> IO InfoHash)
                  -> GetTorrents
                  -> ErrorT Err IO (Session -> IO [Torrent])
-adaptGetTorrents dl ih f = do f_tl <- getFreeFunc dl "free_torrent_list"
-                              f_th <- getFreeFunc dl "free_torrent_handle"
-                              tl_elems <- adaptTListElems <$> mkTListElems <$> getFunc dl "tlist_elems"
-                              tl_dump  <- adaptTListDump f_th tl_elems <$> mkTListDump <$> getFunc dl "tlist_dump"
+adaptGetTorrents dl ihf f = do f_tl <- getFreeFunc dl "free_torrent_list"
+                               f_th <- getFreeFunc dl "free_torrent_handle"
+                               tl_elems <- adaptTListElems <$> mkTListElems <$> getFunc dl "tlist_elems"
+                               tl_dump  <- adaptTListDump f_th tl_elems <$> mkTListDump <$> getFunc dl "tlist_dump"
 
-                              return $ \(SES s m) -> withForeignPtr s $ \p -> do
-                                                     ts <- tl_dump =<< newForeignPtr f_tl =<< f p
-                                                     is <- mapM (\t -> ih $ TOR t undefined) ts
-                                                     ns <- atomically $ do m' <- readTVar m
-                                                                           mapM (\i -> newTVar $ M.lookupDefault "" i m') is
-                                                     return . L.map (uncurry TOR) $ L.zip ts ns
+                               return $ \(SES s m) -> withForeignPtr s $ \p -> do
+                                                      tptrs <- tl_dump =<< newForeignPtr f_tl =<< f p
+                                                      ihashes <- mapM (\t -> ihf $ TOR t undefined) tptrs
+                                                      ns <- atomically $ do m' <- readTVar m
+                                                                            mapM (getMappedName m') ihashes
+                                                      return . L.map (uncurry TOR) $ L.zip tptrs ns
+    where
+        getMappedName :: HashMap InfoHash (TVar Text) -> InfoHash -> STM (TVar Text)
+        getMappedName m ih = case M.lookup ih m of
+                                Just tv -> return tv
+                                Nothing -> newTVar ""
 
 type SetSessionLimit = Ptr Session_ -> CInt -> IO ()
 foreign import ccall "dynamic"

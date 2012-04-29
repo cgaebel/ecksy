@@ -16,4 +16,4 @@ import Data.Aeson
 -- inclined, or create a single monolithic file.
 getUpdateTorrentsR :: Handler RepJson
 getUpdateTorrentsR = requireLogin $ do (tl, ses) <- getTorSession <$> getYesod
-                                       (RepJson . toContent . encode) <$> (liftIO $ getSessionSummary tl ses)
+                                       RepJson . toContent . encode <$> (liftIO $ getSessionSummary tl ses)

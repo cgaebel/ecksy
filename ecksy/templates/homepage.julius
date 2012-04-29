@@ -105,8 +105,17 @@ $(document).ready(function() {
              : "stalled";
     }
 
+    function renameTorrent(hash, newName) {
+        $.ajax({ type : 'POST'
+               , url  : '@{RenameTorrentR}'
+               , data : { infohash : hash
+                        , name     : newName
+                        }
+               });
+    }
+
     // Returns 's' wrapped in the given HTML tag.
-    // > inTag("td", "x") 
+    // > inTag("td", "x")
     // >>> <td>x</td>
     function inTag(tagName, s) {
         return [ "<", tagName, ">"
@@ -157,7 +166,9 @@ $(document).ready(function() {
         // significantly less wasteful.
         function buildRow(torrent, idx) {
             return inTag("tr",
-                     [ inTag("td", torrent.Name)
+                     [ inTag("td",
+                         inTag('div id="name-' + idx + '"',
+                            torrent.Name))
                      , inTag("td", prettyPrintRate(torrent.DownloadRate))
                      , inTag("td", prettyPrintRate(torrent.UploadRate))
                      // TODO: Download button when complete, spinning progress bar
@@ -188,7 +199,17 @@ $(document).ready(function() {
                 recvdJson.map(buildRow)));
 
         for(var i = 0; i < recvdJson.length; i++)
-            $('#progressbar-' + i).progressbar({ value: 100*getProgress(recvdJson[i]) });
+        {
+            var j = i; // removes use of a shared variable. This one will be local
+                       // to each iteration, leting us use it in callbacks without
+                       // fear of mutation.
+
+            $('#name-' + i).click(function() {
+                renameTorrent(recvdJson[j].InfoHash, prompt("Rename", recvdJson[j].Name));
+            });
+
+            $('#progressbar-' + i).progressbar({ value: 100*getProgress(recvdJson[j]) });
+        }
     }
 
     function updateSpeeds(totalDown, totalUp) {

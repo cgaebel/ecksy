@@ -7,22 +7,18 @@ import Control.Monad.Trans.Maybe
 import Import
 import Torrent
 
-checkValidity :: InfoHash -> Handler ()
-checkValidity h | T.all isHexDigit h = return ()
-                | otherwise          = invalidArgs [ "infohash" ]
-
 -- | Renames a torrent with a given info hash to have the given name.
 postRenameTorrentR :: Handler RepJson
 postRenameTorrentR = requireLogin $ do (ihash, newName) <- runInputPost $ (,)
                                                                      <$> ireq textField "infohash"
                                                                      <*> ireq textField "name"
 
-                                       checkValidity ihash
-
                                        (tl, ses) <- getTorSession <$> getYesod
 
-                                       r <- runMaybeT $ do t <- MaybeT . liftIO $ findTorrent tl ses ihash
+                                       r <- runMaybeT $ do guard $ T.all isHexDigit ihash
+                                                           t <- MaybeT . liftIO $ findTorrent tl ses ihash
                                                            liftIO $ setTorrentName tl t newName
+
                                                            lift . runDB $ updateWhere [ DownloadLinkInfoHash ==. ihash ]
                                                                                       [ DownloadLinkName =. newName ]
 

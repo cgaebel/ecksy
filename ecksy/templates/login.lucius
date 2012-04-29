@@ -18,9 +18,11 @@
 #pw {
     width: 400px;
     height: 50px;
-    position: relative;
+    position: absolute;
     left: 50%;
+    top: 50%;
     margin-left: -200px;
+    margin-top: -25px;
     font-size: 20pt;
 
     border-bottom-left-radius: #{borderRadius};

@@ -74,12 +74,8 @@ makeFoundation lTor sesh conf setLogger = do
                              _ <- liftIO . forkIO $ mapM_ (\(DownloadLink i n m) -> queueForDownload i n m) ts
                              return ()
 
-        queueForDownload :: InfoHash -> DisplayName -> MagnetLink -> IO (Maybe Torrent)
-        queueForDownload ihash dn mlink = do t <- addMagnetURI lTor sesh mlink $ downloadFolder ++ "/" ++ ihash ++ "/"
-                                             case t of
-                                                 Just t' -> do setTorrentName lTor t' dn
-                                                               return t
-                                                 Nothing -> return t
+        queueForDownload ihash dn mlink = runMaybeT $ do t <- MaybeT . addMagnetURI lTor sesh mlink $ downloadFolder ++ "/" ++ ihash ++ "/"
+                                                         lift $ setTorrentName lTor t dn
 
 -- for yesod devel
 getApplicationDev :: LTor -> Session -> IO (Int, Application)

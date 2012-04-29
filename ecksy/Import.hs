@@ -8,6 +8,7 @@ module Import
     , module Data.Monoid
     , module Control.Applicative
     , module Control.Monad
+    , module Control.Monad.Trans.Maybe
     , Text
     , (++)
     , map
@@ -26,6 +27,7 @@ import Data.Monoid ( Monoid (mappend, mempty, mconcat)
                    )
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Monad
+import Control.Monad.Trans.Maybe
 import Data.Text (Text)
 import Settings.StaticFiles
 
